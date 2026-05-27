@@ -154,6 +154,119 @@ contextRouter.get('/stream', (req, res) => {
 	});
 });
 
+function filterSnapshotForFamily(snapshot = {}, family = 'rss') {
+	const cloned = JSON.parse(JSON.stringify(snapshot || {}));
+	try {
+		const matches = Array.isArray(cloned.output?.matches) ? cloned.output.matches : cloned.matches || [];
+		const isRss = (item = {}) => {
+			const src = String(item.discoverySource || item.source || item.feedUrl || '').toLowerCase();
+			if (String(item.discoverySource || '').toLowerCase() === 'rss') return true;
+			if (/\b(rss|feed|google news|wired|investing|news)\b/.test(src)) return true;
+			if (String(item.parentUrl || item.link || '').match(/(\.rss$|\/feed(?:$|\/)|\.xml$)/i)) return true;
+			return false;
+		};
+
+		if (family === 'rss') {
+			cloned.output = cloned.output || {};
+			cloned.output.matches = matches.filter((m) => isRss(m));
+		} else {
+			cloned.output = cloned.output || {};
+			cloned.output.matches = matches.filter((m) => !isRss(m));
+		}
+	} catch (e) {
+		// noop: fall back to unmodified snapshot
+	}
+	return cloned;
+}
+
+contextRouter.get('/rss-stream', (req, res) => {
+	res.setHeader('Content-Type', 'text/event-stream');
+	res.setHeader('Cache-Control', 'no-cache, no-transform');
+	res.setHeader('Connection', 'keep-alive');
+	res.setHeader('X-Accel-Buffering', 'no');
+	if (typeof res.flushHeaders === 'function') {
+		res.flushHeaders();
+	}
+	if (typeof req.socket?.setKeepAlive === 'function') {
+		req.socket.setKeepAlive(true);
+	}
+
+	res.write('retry: 5000\n\n');
+	writeSseEvent(res, {
+		event: 'snapshot',
+		id: getContextFeedSnapshot().streamVersion || 0,
+		data: {
+			reason: 'initial',
+			snapshot: filterSnapshotForFamily(getContextFeedSnapshot(), 'rss'),
+		},
+	});
+
+	const unsubscribe = subscribeToContextFeedMonitor((payload) => {
+		writeSseEvent(res, {
+			event: 'snapshot',
+			id: payload.id,
+			data: {
+				...payload,
+				snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'rss'),
+			},
+		});
+	});
+
+	const heartbeat = setInterval(() => {
+		res.write(': keep-alive\n\n');
+	}, 25000);
+
+	req.on('close', () => {
+		clearInterval(heartbeat);
+		unsubscribe();
+		res.end();
+	});
+});
+
+contextRouter.get('/crawl-stream', (req, res) => {
+	res.setHeader('Content-Type', 'text/event-stream');
+	res.setHeader('Cache-Control', 'no-cache, no-transform');
+	res.setHeader('Connection', 'keep-alive');
+	res.setHeader('X-Accel-Buffering', 'no');
+	if (typeof res.flushHeaders === 'function') {
+		res.flushHeaders();
+	}
+	if (typeof req.socket?.setKeepAlive === 'function') {
+		req.socket.setKeepAlive(true);
+	}
+
+	res.write('retry: 5000\n\n');
+	writeSseEvent(res, {
+		event: 'snapshot',
+		id: getContextFeedSnapshot().streamVersion || 0,
+		data: {
+			reason: 'initial',
+			snapshot: filterSnapshotForFamily(getContextFeedSnapshot(), 'crawl'),
+		},
+	});
+
+	const unsubscribe = subscribeToContextFeedMonitor((payload) => {
+		writeSseEvent(res, {
+			event: 'snapshot',
+			id: payload.id,
+			data: {
+				...payload,
+				snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'crawl'),
+			},
+		});
+	});
+
+	const heartbeat = setInterval(() => {
+		res.write(': keep-alive\n\n');
+	}, 25000);
+
+	req.on('close', () => {
+		clearInterval(heartbeat);
+		unsubscribe();
+		res.end();
+	});
+});
+
 contextRouter.post('/keywords', async (req, res, next) => {
 	try {
 		const values = Array.isArray(req.body?.keywords) ? req.body.keywords : [req.body?.keyword].filter(Boolean);

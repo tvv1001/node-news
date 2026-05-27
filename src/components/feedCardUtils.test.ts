@@ -13,12 +13,12 @@ test('extractLinkifiedFeedTokens links explicit urls found in summary text', () 
 
 test('extractLinkifiedFeedTokens links x handles against the original site when the card points to x', () => {
 	const tokens = extractLinkifiedFeedTokens('Fresh note from @querynotify on the thread.', {
-		link: 'https://x.com/querynotify/status/1234567890',
+		link: 'https://twitter.com/querynotify/status/1234567890',
 	});
 	const linkToken = tokens.find((token) => token.type === 'link');
 
 	assert.equal(linkToken?.value, '@querynotify');
-	assert.equal(linkToken?.href, 'https://x.com/querynotify');
+	assert.equal(linkToken?.href, 'https://twitter.com/querynotify');
 });
 
 test('extractLinkifiedFeedTokens links reddit user tags when the card originates from reddit', () => {

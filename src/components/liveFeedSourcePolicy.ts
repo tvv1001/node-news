@@ -34,7 +34,7 @@ function getPathSegments(pathname = '') {
 
 export function isDirectXStatusUrl(value = '') {
 	const { hostname, pathname } = getUrlParts(value);
-	return /(^|\.)(x\.com|twitter\.com)$/i.test(hostname) && /\/status\/\d+/i.test(pathname);
+	return /(^|\.)(twitter\.com)$/i.test(hostname) && /\/status\/\d+/i.test(pathname);
 }
 
 export function isRedditPostUrl(value = '') {

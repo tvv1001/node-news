@@ -257,10 +257,6 @@ You can still use `X_AUTH_TOKEN` and `X_CSRF_TOKEN` in `server/.env` as the fall
 | `POST`   | `/api/oscn/case`                | OSCN case-detail fetch                |
 | `DELETE` | `/api/oscn/cache`               | Clear OSCN cache                      |
 | `GET`    | `/api/rss/summaries`            | RSS summary aggregation               |
-| `GET`    | `/api/x/health`                 | Check built-in X scraper health       |
-| `GET`    | `/api/x/twitter/user/:u`        | Proxy X user feed route               |
-| `GET`    | `/api/x/twitter/keyword/:k`     | Proxy X keyword feed route            |
-| `GET`    | `/api/x/proxy/*`                | Generic proxy for any X route         |
 | `GET`    | `/api/context/monitor`          | Get the current monitor snapshot      |
 | `GET`    | `/api/context/portal`           | Get detailed portal management data   |
 | `GET`    | `/api/context/tags`             | Get the current tag list              |
@@ -321,38 +317,3 @@ Application state is persisted to JSON files under `server/data/`, including:
 - crawler reference datasets
 
 Treat `server/data/` as local application state plus reference datasets, not purely static fixtures.
-
-## Built-in X feed scraping
-
-This repository no longer requires Docker or a local RSSHub container.
-
-### Use through Query Notify API
-
-Built-in X feed scraping is available through the backend:
-
-- `GET /api/x/twitter/user/:username`
-- `GET /api/x/twitter/keyword/:keyword`
-- `GET /api/x/twitter/list/:id`
-
-Examples:
-
-- `/api/x/twitter/user/_RSSHub`
-- `/api/x/twitter/keyword/ai`
-
-The former proxy mode is no longer supported, and the app now uses local scraping for those X feed routes.
-
-## Maintenance notes
-
-- Use ESM everywhere
-- Keep route handlers thin and move reusable logic into `server/services/`
-- Preserve search-result normalization and downstream merge behavior
-- Use `server/utils/logger.js` for backend logging
-- Keep future work aligned to the current contextual search and feed experience, not legacy person-profile functionality
-
-## Related project files
-
-- `.github/copilot-instructions.md`
-- `.github/agents/search-crawler.agent.md`
-- `package.json`
-- `server/package.json`
-- `server/.env.example`

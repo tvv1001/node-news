@@ -16,7 +16,7 @@ async function serveScrapedXFeed(res, scraperFn, label) {
 			error: 'X feed scrape failed.',
 			label,
 			details: error.message,
-			hint: 'Set X_AUTH_TOKEN and X_CSRF_TOKEN in server/.env using your logged-in x.com auth_token and ct0 cookies. The scraper uses X GraphQL directly.',
+			hint: 'Set X_AUTH_TOKEN and X_CSRF_TOKEN in server/.env using your logged-in twitter.com auth_token and ct0 cookies. The scraper uses Twitter GraphQL directly.',
 		});
 	}
 }

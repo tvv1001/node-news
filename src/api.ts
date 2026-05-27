@@ -105,8 +105,21 @@ export async function fetchContextMonitor({ refresh = false } = {}) {
 
 export async function fetchContextPortal() {
 	const url = new URL(buildApiUrl('/api/context/portal', CONTEXT_BASE));
-	const res = await fetch(url as any, { cache: 'no-store' });
-	return handleResponse(res);
+	try {
+		const res = await fetch(url as any, { cache: 'no-store' });
+		return await handleResponse(res);
+	} catch (err) {
+		// Return a safe default shape so the UI can render while the backend
+		// is unavailable or the request fails.
+		return {
+			status: { started: false },
+			config: {},
+			tags: [],
+			sources: { builtin: [], generalNewsCatalog: [] },
+			catalog: [],
+			output: { matches: [], generalNews: [] },
+		};
+	}
 }
 
 export function openContextMonitorStream({ onSnapshot, onOpen, onError }: any = {}) {

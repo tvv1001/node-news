@@ -869,15 +869,15 @@ export function buildDefaultContextSourceLabel(inputUrl = '', options = {}) {
 
 		if (isXHostname(hostname)) {
 			if (pathname === '/search' && parsedUrl.searchParams.has('q')) {
-				return isTemplate ? 'X Search Template' : 'X Search';
+				return isTemplate ? 'Twitter Search Template' : 'Twitter Search';
 			}
 
 			const profileMatch = pathname.match(/^\/([^/]+)$/);
 			if (profileMatch && !['home', 'explore', 'notifications', 'messages', 'search', 'settings', 'i'].includes(profileMatch[1].toLowerCase())) {
-				return isTemplate ? `X Profile Template · @${profileMatch[1]}` : `X Profile · @${profileMatch[1]}`;
+				return isTemplate ? `Twitter Profile Template · @${profileMatch[1]}` : `Twitter Profile · @${profileMatch[1]}`;
 			}
 
-			return isTemplate ? 'X Template' : 'X';
+			return isTemplate ? 'Twitter Template' : 'Twitter';
 		}
 
 		const hostLabel = parsedUrl.hostname.replace(/^www\./i, '').trim();
@@ -1448,7 +1448,7 @@ async function resolveContextSourceInput(input = {}, options = {}) {
 }
 
 function isXHostname(value = '') {
-	return /(^|\.)(x\.com|twitter\.com)$/i.test(String(value || '').trim());
+	return /(^|\.)(twitter\.com)$/i.test(String(value || '').trim());
 }
 
 function decodeUrlComponent(value = '') {
@@ -1614,7 +1614,7 @@ function xStatusIdToIsoDate(value = '') {
 function isStatusOnlyXFeed(feed = {}) {
 	const source = String(feed?.source || '').toLowerCase();
 	const tags = Array.isArray(feed?.tags) ? feed.tags.map((tag) => String(tag || '').toLowerCase()) : [];
-	return source.includes('x cashtags') || source.includes('google news · x') || tags.includes('x.com');
+	return source.includes('x cashtags') || source.includes('google news · twitter') || tags.includes('twitter.com');
 }
 
 function isStatusOnlyXResult(result = {}) {
@@ -1740,11 +1740,11 @@ function isXLikeContextMatch(match = {}) {
 
 	return (
 		source.includes('x live tag feed') ||
-		source.includes('google news · x') ||
+		source.includes('google news · twitter') ||
 		source.includes('x cashtags') ||
-		homepage.includes('x.com') ||
-		feedUrl.includes('x.com') ||
-		tags.includes('x.com')
+		homepage.includes('twitter.com') ||
+		feedUrl.includes('twitter.com') ||
+		tags.includes('twitter.com')
 	);
 }
 
@@ -2872,7 +2872,7 @@ function normalizeGoogleSiteRestriction(site = '') {
 
 function buildGoogleNewsScopedQuery(keyword = '', { site = '' } = {}) {
 	const normalizedSite = normalizeGoogleSiteRestriction(site);
-	const query = normalizedSite === 'x.com' ? buildGoogleNewsXSearchQuery(keyword) : buildGoogleNewsSearchQuery(keyword);
+	const query = normalizedSite === 'twitter.com' ? buildGoogleNewsXSearchQuery(keyword) : buildGoogleNewsSearchQuery(keyword);
 	if (!query) return '';
 
 	const scopedQuery = normalizedSite && /\bOR\b/.test(query) ? `(${query})` : query;
@@ -2892,7 +2892,7 @@ export function buildGoogleNewsFeedUrl(keyword = '', options = {}) {
 }
 
 export function buildGoogleNewsXFeedUrl(keyword = '') {
-	return buildGoogleNewsFeedUrl(keyword, { site: 'x.com' });
+	return buildGoogleNewsFeedUrl(keyword, { site: 'twitter.com' });
 }
 
 export function buildGoogleNewsQuoraFeedUrl(keyword = '') {
@@ -3045,19 +3045,19 @@ function buildGoogleNewsFeed(keyword = '') {
 export function buildXSearchFeed(keyword = '', context = 'research') {
 	const normalizedKeyword = normalizeKeyword(keyword);
 	const normalizedContext = normalizeFeedContext(context);
-	const homepage = applyTagToUrlTemplate('https://x.com/search?q={tag}&f=live', normalizedKeyword);
+	const homepage = applyTagToUrlTemplate('https://twitter.com/search?q={tag}&f=live', normalizedKeyword);
 	const feedUrl = transformPlatformUrlToFeedUrl(homepage);
 	if (!normalizedKeyword || !homepage || !feedUrl) return null;
 
 	return {
 		context: normalizedContext,
-		source: 'X Search',
+		source: 'Twitter Search',
 		homepage,
 		url: feedUrl,
-		urlTemplate: 'https://x.com/search?q={tag}&f=live',
-		parentUrl: 'https://x.com/search?q={tag}&f=live',
+		urlTemplate: 'https://twitter.com/search?q={tag}&f=live',
+		parentUrl: 'https://twitter.com/search?q={tag}&f=live',
 		templateTag: normalizedKeyword,
-		tags: [normalizedContext, 'x.com', 'live-search', normalizedKeyword],
+		tags: [normalizedContext, 'twitter.com', 'live-search', normalizedKeyword],
 		keyword: normalizedKeyword,
 	};
 }
@@ -3069,10 +3069,10 @@ function buildGoogleNewsXFeed(keyword = '', context = 'research') {
 
 	return {
 		context: normalizeFeedContext(context),
-		source: 'Google News · X',
-		homepage: buildGoogleNewsSearchHomepageUrl(normalizedKeyword, { site: 'x.com' }),
+		source: 'Google News · Twitter',
+		homepage: buildGoogleNewsSearchHomepageUrl(normalizedKeyword, { site: 'twitter.com' }),
 		url: feedUrl,
-		tags: [normalizeFeedContext(context), 'google-news', 'x.com', normalizedKeyword],
+		tags: [normalizeFeedContext(context), 'google-news', 'twitter.com', normalizedKeyword],
 		keyword: normalizedKeyword,
 	};
 }
@@ -3096,7 +3096,7 @@ export function buildGoogleXStockSearchKeyword(keyword = '') {
 	const matcher = buildKeywordMatcher(keyword);
 	if (!matcher?.canUseFinanceFeeds || !matcher.symbol) return '';
 
-	return `site:x.com $${matcher.symbol}`;
+	return `site:twitter.com $${matcher.symbol}`;
 }
 
 function buildSearchEngineFeed(keyword = '', engine = 'google', context = 'news', options = {}) {
@@ -3130,8 +3130,8 @@ function buildXStockSearchFeed(keyword = '', engine = 'google') {
 	const sourceLabel = CONTEXT_SEARCH_ENGINE_SOURCE_LABELS[normalizedEngine] || 'Search';
 
 	return buildSearchEngineFeed(fallbackKeyword, normalizedEngine, 'news', {
-		source: `${sourceLabel} · X cashtags`,
-		tags: ['news', 'search-engine', normalizedEngine, 'x.com', 'cashtag', normalizeKeyword(keyword)].filter(Boolean),
+		source: `${sourceLabel} · Twitter cashtags`,
+		tags: ['news', 'search-engine', normalizedEngine, 'twitter.com', 'cashtag', normalizeKeyword(keyword)].filter(Boolean),
 	});
 }
 
@@ -3404,7 +3404,13 @@ function getContextFeedFamily(feed = {}) {
 
 	if (feed?.type === 'search-engine') return 'search-engine';
 	if (source.includes('reddit') || feedUrl.includes('reddit.com') || homepage.includes('reddit.com') || tags.includes('reddit')) return 'reddit';
-	if (source.includes('google news · x') || source.includes('x cashtags') || feedUrl.includes('x.com') || homepage.includes('x.com') || tags.includes('x.com')) {
+	if (
+		source.includes('google news · twitter') ||
+		source.includes('twitter cashtags') ||
+		feedUrl.includes('twitter.com') ||
+		homepage.includes('twitter.com') ||
+		tags.includes('twitter.com')
+	) {
 		return 'x';
 	}
 	if (source.includes('quora') || feedUrl.includes('quora.com') || homepage.includes('quora.com') || tags.includes('quora.com')) return 'quora';
@@ -3714,9 +3720,19 @@ export function matchContextText(text = '', input = [], options = {}) {
 }
 
 function buildMatchId(feed = {}, item = {}) {
-	return String(item.guid || item.id || item.link || `${feed.context}:${feed.source}:${item.title || ''}`)
-		.trim()
-		.slice(0, 500);
+	// Prefer a canonicalized link/guid when available to avoid duplicates caused by tracking params
+	const rawLink = String(item.link || item.guid || item.id || '').trim();
+	if (rawLink) {
+		try {
+			const stripped = stripTrackingParams(rawLink).toLowerCase();
+			if (stripped) return stripped.slice(0, 500);
+		} catch {
+			// fall through to fallback
+		}
+	}
+
+	const fallback = `${String(feed.context || '')}:${String(feed.source || '')}:${String(item.title || '')}:${String(item.publishedAt || item.discoveredAt || '')}`;
+	return String(fallback).trim().slice(0, 500);
 }
 
 function isRedditDomain(value = '') {
@@ -4017,13 +4033,12 @@ function getPreferredFinanceSourceFamily(item = {}) {
 	}
 
 	if (
-		source.includes('x cashtags') ||
-		source.includes('google news · x') ||
-		feedUrl.includes('x.com') ||
-		homepage.includes('x.com') ||
-		link.includes('x.com') ||
+		source.includes('twitter cashtags') ||
+		source.includes('google news · twitter') ||
+		feedUrl.includes('twitter.com') ||
+		homepage.includes('twitter.com') ||
 		link.includes('twitter.com') ||
-		tags.includes('x.com')
+		tags.includes('twitter.com')
 	) {
 		return 'x';
 	}
@@ -4049,13 +4064,12 @@ function getPreferredSocialSourceFamily(item = {}) {
 	}
 
 	if (
-		source.includes('x cashtags') ||
-		source.includes('google news · x') ||
-		feedUrl.includes('x.com') ||
-		homepage.includes('x.com') ||
-		link.includes('x.com') ||
+		source.includes('twitter cashtags') ||
+		source.includes('google news · twitter') ||
+		feedUrl.includes('twitter.com') ||
+		homepage.includes('twitter.com') ||
 		link.includes('twitter.com') ||
-		tags.includes('x.com')
+		tags.includes('twitter.com')
 	) {
 		return 'x';
 	}

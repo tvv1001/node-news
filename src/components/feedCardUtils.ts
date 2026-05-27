@@ -62,8 +62,8 @@ function buildHandleProfileUrl(token = '', item: any = {}) {
 		const handle = rawToken.slice(1);
 		if (!handle) return '';
 
-		if (/(^|\.)(x\.com|twitter\.com)$/i.test(primaryHost)) {
-			return `https://x.com/${handle}`;
+		if (/(^|\.)(twitter\.com)$/i.test(primaryHost)) {
+			return `https://twitter.com/${handle}`;
 		}
 		if (/(^|\.)instagram\.com$/i.test(primaryHost)) {
 			return `https://www.instagram.com/${handle}/`;

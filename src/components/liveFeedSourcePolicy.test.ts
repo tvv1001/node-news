@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-
-import {
-	getLiveFeedFreshnessBoost,
-	getLiveFeedRecencyPriority,
+		{
+			source: 'DuckDuckGo Search · Twitter cashtags',
+			link: 'https://twitter.com/tesla/status/1923000000000000000',
+		},
 	hasFreshPublishedAt,
 	isAllowedLiveFeedItem,
 	isDirectXStatusUrl,
@@ -19,9 +19,9 @@ function hoursAgoIso(hours = 0) {
 	return new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 }
 
-test('isDirectXStatusUrl recognizes direct x status links', () => {
-	assert.equal(isDirectXStatusUrl('https://x.com/tesla/status/1923000000000000000'), true);
-	assert.equal(isDirectXStatusUrl('https://x.com/tesla'), false);
+test('isDirectXStatusUrl recognizes direct twitter status links', () => {
+	assert.equal(isDirectXStatusUrl('https://twitter.com/tesla/status/1923000000000000000'), true);
+	assert.equal(isDirectXStatusUrl('https://twitter.com/tesla'), false);
 });
 
 test('isRedditPostUrl recognizes reddit thread links', () => {
@@ -33,7 +33,7 @@ test('live feed policy keeps direct social posts, reddit posts, and google news 
 	assert.equal(
 		isAllowedLiveFeedItem({
 			source: 'DuckDuckGo Search · X cashtags',
-			link: 'https://x.com/tesla/status/1923000000000000000',
+			link: 'https://twitter.com/tesla/status/1923000000000000000',
 			title: 'Tesla update on production milestones',
 			summary: 'A direct X post about production milestones.',
 		}),

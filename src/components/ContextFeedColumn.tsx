@@ -408,9 +408,9 @@ function ContextFeedColumn({
 				{isAllNewsTag(activeTag) && monitor.generalNewsLastError && <div className='context-lane-error-msg'>{monitor.generalNewsLastError}</div>}
 				<div className='context-ticker-window context-feed-window'>
 					<div className='context-ticker-track'>
-						{filteredNewsItems.map((item: any) => (
+						{filteredNewsItems.map((item: any, index: number) => (
 							<FeedCard
-								key={item.id || item.link || item.title}
+								key={`${item.id || item.link || item.title || 'context-item'}-${index}`}
 								item={item}
 								className={`context-feed-stream-item ${isTaggedStreamColumn ? 'context-feed-stream-item-tagged' : ''}`}
 								timestamp={formatArticleTimestamp(item.publishedAt, item.discoveredAt)}

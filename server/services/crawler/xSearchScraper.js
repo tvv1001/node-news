@@ -5,12 +5,12 @@
  * exactly the same requests the x.com frontend makes — no browser, no Docker.
  *
  * Required env vars (server/.env):
- *   X_AUTH_TOKEN   — value of the `auth_token` cookie from a logged-in x.com session
- *   X_CSRF_TOKEN   — value of the `ct0` cookie from a logged-in x.com session
+ *   X_AUTH_TOKEN   — value of the `auth_token` cookie from a logged-in twitter.com session
+ *   X_CSRF_TOKEN   — value of the `ct0` cookie from a logged-in twitter.com session
  *
  * How to get the tokens:
- *   1. Log in to x.com in your browser
- *   2. Open DevTools → Application → Cookies → https://x.com
+ *   1. Log in to twitter.com in your browser
+ *   2. Open DevTools → Application → Cookies → https://twitter.com
  *   3. Copy the values of `auth_token` and `ct0`
  *   4. Paste them into server/.env as X_AUTH_TOKEN and X_CSRF_TOKEN
  *
@@ -25,7 +25,7 @@ import { getActiveXCredentials } from './xSessionStore.js';
 
 // ─── Config ──────────────────────────────────────────────────────────────────
 
-// X's public frontend bearer token — constant across all x.com browser clients.
+// X's public frontend bearer token — constant across all twitter.com browser clients.
 const X_BEARER_TOKEN =
 	process.env.X_BEARER_TOKEN ||
 	'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I6xUEXAMbCbsAAAAMUVGeHCZMRWufDorgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
@@ -38,8 +38,8 @@ const SEARCH_TIMELINE_QUERY_ID = process.env.X_SEARCH_TIMELINE_QUERY_ID || 'Yw6L
 const USER_BY_SCREEN_NAME_QUERY_ID = process.env.X_USER_BY_SCREEN_NAME_QUERY_ID || 'G3KGOASz96M-Qu0nwmGXNg';
 const USER_TWEETS_QUERY_ID = process.env.X_USER_TWEETS_QUERY_ID || 'E3opETHurmVJflFsUBVuUQ';
 
-const X_BASE_URL = 'https://x.com';
-const X_API_BASE = 'https://x.com/i/api/graphql';
+const X_BASE_URL = 'https://twitter.com';
+const X_API_BASE = 'https://twitter.com/i/api/graphql';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
@@ -75,8 +75,8 @@ function buildXApiHeaders(credentials = null) {
 		'Accept': '*/*',
 		'Accept-Language': 'en-US,en;q=0.9',
 		'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-		'Referer': 'https://x.com/',
-		'Origin': 'https://x.com',
+		'Referer': 'https://twitter.com/',
+		'Origin': 'https://twitter.com',
 	};
 }
 

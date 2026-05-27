@@ -3,6 +3,8 @@ const DEFAULT_RETRY_MS = 15000;
 let contextBase = 'http://localhost:3001';
 let retryMs = DEFAULT_RETRY_MS;
 let stream: any = null;
+let rssStream: any = null;
+let crawlStream: any = null;
 let retryTimer: any = null;
 let active = false;
 let hasConnectedToStream = false;
@@ -57,6 +59,7 @@ async function loadContextMonitor({ refresh = false } = {}) {
 function connectStream() {
 	if (!active) return;
 
+	// close existing streams
 	closeStream();
 
 	if (typeof EventSource === 'undefined') {
@@ -64,15 +67,42 @@ function connectStream() {
 		return;
 	}
 
+	// Primary combined stream (compatibility)
 	stream = new EventSource(buildContextUrl('/api/context/stream'));
 	stream.addEventListener('snapshot', (event: any) => {
 		try {
 			const payload = JSON.parse(event.data);
-			latestSnapshot = payload?.snapshot || payload;
+			// full snapshot fallback
+			latestSnapshot = mergeSnapshots(latestSnapshot, payload?.snapshot || payload);
 			postWorkerMessage('status', { status: 'connected' });
 			postWorkerMessage('snapshot', { reason: payload?.reason || 'snapshot', snapshot: latestSnapshot });
 		} catch (error: any) {
 			postWorkerMessage('worker-error', { error: error?.message || 'Invalid context stream payload.' });
+		}
+	});
+
+	// RSS-focused low-latency stream
+	rssStream = new EventSource(buildContextUrl('/api/context/rss-stream'));
+	rssStream.addEventListener('snapshot', (event: any) => {
+		try {
+			const payload = JSON.parse(event.data);
+			latestSnapshot = mergeSnapshots(latestSnapshot, payload?.snapshot || payload);
+			postWorkerMessage('status', { status: 'connected' });
+			postWorkerMessage('snapshot', { reason: `rss:${payload?.reason || 'snapshot'}`, snapshot: payload?.snapshot || payload });
+		} catch (error: any) {
+			postWorkerMessage('worker-error', { error: error?.message || 'Invalid rss stream payload.' });
+		}
+	});
+
+	// Crawl/background stream
+	crawlStream = new EventSource(buildContextUrl('/api/context/crawl-stream'));
+	crawlStream.addEventListener('snapshot', (event: any) => {
+		try {
+			const payload = JSON.parse(event.data);
+			latestSnapshot = mergeSnapshots(latestSnapshot, payload?.snapshot || payload);
+			postWorkerMessage('snapshot', { reason: `crawl:${payload?.reason || 'snapshot'}`, snapshot: payload?.snapshot || payload });
+		} catch (error: any) {
+			postWorkerMessage('worker-error', { error: error?.message || 'Invalid crawl stream payload.' });
 		}
 	});
 
@@ -88,6 +118,29 @@ function connectStream() {
 		});
 		scheduleReconnect();
 	};
+}
+
+function mergeSnapshots(base = null, incoming = null) {
+	if (!incoming) return base || incoming;
+	if (!base) return incoming;
+	try {
+		const baseMatches = Array.isArray(base.output?.matches) ? base.output.matches : base.matches || [];
+		const incomingMatches = Array.isArray(incoming.output?.matches) ? incoming.output.matches : incoming.matches || [];
+		const map = new Map();
+		for (const m of baseMatches) {
+			if (m && m.id) map.set(String(m.id), m);
+		}
+		for (const m of incomingMatches) {
+			if (m && m.id) map.set(String(m.id), m);
+		}
+		const merged = Array.from(map.values());
+		const out = JSON.parse(JSON.stringify(base));
+		out.output = out.output || {};
+		out.output.matches = merged;
+		return out;
+	} catch {
+		return incoming || base;
+	}
 }
 
 async function bootstrapContextMonitor() {

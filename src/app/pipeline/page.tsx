@@ -12,7 +12,6 @@ import {
 	unblockContextSource,
 	fetchContextMonitor,
 } from '../../api';
-import ContextFeedColumn from '../../components/ContextFeedColumn';
 import FeedCard from '../../components/FeedCard';
 import '../../style.css';
 
@@ -78,357 +77,7 @@ function isXSourceItem(item: any = {}) {
 	return /(x\.com|twitter\.com|\/twitter\/)/i.test([item?.source, item?.link, item?.feedUrl, item?.homepage].filter(Boolean).join(' '));
 }
 
-function SourceForm({ onAdd, editingSource, onCancelEdit }: any) {
-	const [url, setUrl] = useState('');
-	const [source, setSource] = useState('');
-	const [context, setContext] = useState('news');
-	const [useTagTemplate, setUseTagTemplate] = useState(false);
-	const [replaceTagValue, setReplaceTagValue] = useState('');
-	const [testTag, setTestTag] = useState('');
-	const [loading, setLoading] = useState(false);
-	const [testing, setTesting] = useState(false);
-	const [preview, setPreview] = useState<any>(null);
-	const [testError, setTestError] = useState('');
-
-	useEffect(() => {
-		setPreview(null);
-		setTestError('');
-		if (editingSource) {
-			setUrl(editingSource.urlTemplate || editingSource.url || editingSource.homepage || '');
-			setSource(editingSource.source || '');
-			setContext(editingSource.context || 'news');
-			setUseTagTemplate(Boolean(editingSource.type === 'tag-template' || editingSource.urlTemplate));
-			setReplaceTagValue(editingSource.replaceTagValue || '');
-			setTestTag(editingSource.sampleTag || editingSource.templateTag || '');
-		} else {
-			setUrl('');
-			setSource('');
-			setContext('news');
-			setUseTagTemplate(false);
-			setReplaceTagValue('');
-			setTestTag('');
-		}
-	}, [editingSource]);
-
-	const handleTest = async () => {
-		if (!url) return;
-		setTesting(true);
-		setPreview(null);
-		setTestError('');
-		try {
-			const data = await testContextSource({
-				url,
-				useTagTemplate,
-				urlTemplate: useTagTemplate ? url : undefined,
-				replaceTagValue: useTagTemplate ? replaceTagValue : undefined,
-				testTag: useTagTemplate ? testTag : undefined,
-				sampleTag: useTagTemplate ? testTag : undefined,
-			});
-			setPreview(data);
-			if (!source && data.title) {
-				setSource(data.title);
-			}
-		} catch (err: any) {
-			setTestError(err.message || 'Validation failed');
-		} finally {
-			setTesting(false);
-		}
-	};
-
-	const handleSubmit = async (e: any) => {
-		e.preventDefault();
-		if (!url) return;
-		setLoading(true);
-		try {
-			if (editingSource) {
-				await updateContextSource(editingSource.url, {
-					url,
-					source,
-					context,
-					useTagTemplate,
-					urlTemplate: useTagTemplate ? url : undefined,
-					replaceTagValue: useTagTemplate ? replaceTagValue : undefined,
-					testTag: useTagTemplate ? testTag : undefined,
-					sampleTag: useTagTemplate ? testTag : undefined,
-				});
-				onCancelEdit();
-			} else {
-				await addContextSource({
-					url,
-					source,
-					context,
-					useTagTemplate,
-					urlTemplate: useTagTemplate ? url : undefined,
-					replaceTagValue: useTagTemplate ? replaceTagValue : undefined,
-					testTag: useTagTemplate ? testTag : undefined,
-					sampleTag: useTagTemplate ? testTag : undefined,
-				});
-			}
-			setUrl('');
-			setSource('');
-			setUseTagTemplate(false);
-			setReplaceTagValue('');
-			setTestTag('');
-			setPreview(null);
-			onAdd();
-		} catch (err: any) {
-			alert(err.message || 'Failed to save source');
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	return (
-		<form
-			className='panel portal-card'
-			onSubmit={handleSubmit}>
-			<div className='portal-card-header'>
-				<h3>{editingSource ? 'Edit Custom Source' : 'Add Custom Feed or Website Source'}</h3>
-				{editingSource && (
-					<button
-						type='button'
-						className='btn btn-ghost'
-						onClick={onCancelEdit}
-						style={{ padding: '2px 8px', fontSize: '0.7rem' }}>
-						Cancel
-					</button>
-				)}
-			</div>
-
-			<div className='portal-help-note'>
-				<strong>Note:</strong> You can paste an RSS feed, platform URL, or a normal website page. Turn on <em>tag-based base URL</em> to save a reusable base like
-				<code>https://x.com/search?q=</code> or <code>https://example.com/search?q={'{tag}'}</code>, then test it with different tags before saving. You can also paste a full URL
-				like <code>https://x.com/search?q=tsla&amp;f=live</code> and mark <code>tsla</code> as the replaceable tag section.
-			</div>
-
-			<div className='form-grid'>
-				<div className='form-field full-width'>
-					<label>{useTagTemplate ? 'Base URL Template' : 'Feed or Website URL'}</label>
-					<div style={{ display: 'flex', gap: '8px' }}>
-						<input
-							type='url'
-							value={url}
-							onChange={(e) => {
-								setUrl(e.target.value);
-								setPreview(null);
-								setTestError('');
-							}}
-							placeholder={
-								useTagTemplate ? 'https://x.com/search?q= or https://example.com/search?q={tag}' : 'https://example.com, https://example.com/blog, or https://example.com/feed.xml'
-							}
-							required
-							style={{ flex: 1 }}
-						/>
-						<button
-							type='button'
-							className='btn btn-secondary'
-							onClick={handleTest}
-							disabled={testing || !url}
-							style={{ padding: '0 12px' }}>
-							{testing ? '...' : 'Test'}
-						</button>
-					</div>
-				</div>
-
-				<div className='form-field full-width'>
-					<label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<input
-							type='checkbox'
-							checked={useTagTemplate}
-							onChange={(e) => {
-								setUseTagTemplate(e.target.checked);
-								setPreview(null);
-								setTestError('');
-							}}
-						/>
-						Use this as a tag-based base URL
-					</label>
-				</div>
-
-				{useTagTemplate && (
-					<>
-						<div className='form-field full-width'>
-							<label>Replace this part of the URL with the tag</label>
-							<input
-								type='text'
-								value={replaceTagValue}
-								onChange={(e) => {
-									setReplaceTagValue(e.target.value);
-									setPreview(null);
-									setTestError('');
-								}}
-								placeholder='Optional: tsla'
-							/>
-						</div>
-						<div className='form-field full-width'>
-							<label>Test Tag</label>
-							<input
-								type='text'
-								value={testTag}
-								onChange={(e) => {
-									setTestTag(e.target.value);
-									setPreview(null);
-									setTestError('');
-								}}
-								placeholder='gangstalking, #finra, $TSLA, etc.'
-							/>
-						</div>
-					</>
-				)}
-
-				{testError && <div className='portal-test-error full-width'>{testError}</div>}
-
-				{preview && (
-					<div className='portal-test-preview full-width'>
-						<div className='preview-header'>
-							<strong>Valid: {preview.title}</strong>
-							<span>({preview.itemCount} items found)</span>
-						</div>
-						<div
-							className='portal-help-note'
-							style={{ marginBottom: '8px' }}>
-							{preview.usesTagTemplate ?
-								`Tested base URL with tag "${preview.testTag}" → ${preview.testedUrl}`
-							: preview.sourceType === 'website-feed' ?
-								'Built custom feed from website HTML.'
-							: preview.validationMethod === 'discovered-feed' ?
-								"Found and resolved the website's linked feed automatically."
-							:	'Validated as a direct feed/platform source.'}
-						</div>
-						{preview.usesTagTemplate && preview.baseUrl && (
-							<div
-								className='portal-help-note'
-								style={{ marginBottom: '8px' }}>
-								Template URL: <code>{preview.baseUrl}</code>
-							</div>
-						)}
-						<div className='preview-items'>
-							{preview.items.map((item: any, i: number) => (
-								<div
-									key={i}
-									className='preview-item'>
-									• {item.title}
-								</div>
-							))}
-						</div>
-					</div>
-				)}
-
-				<div className='form-field'>
-					<label>Source Name (Optional)</label>
-					<input
-						type='text'
-						value={source}
-						onChange={(e) => setSource(e.target.value)}
-						placeholder='e.g. BBC News'
-					/>
-				</div>
-				<div className='form-field'>
-					<label>Context</label>
-					<select
-						value={context}
-						onChange={(e) => setContext(e.target.value)}
-						className='portal-select'>
-						<option value='news'>News (General)</option>
-						<option value='research'>Research (Technical)</option>
-					</select>
-				</div>
-			</div>
-			<div
-				className='form-actions'
-				style={{ marginTop: '12px' }}>
-				<button
-					type='submit'
-					className='btn btn-primary'
-					disabled={loading}>
-					{loading ?
-						'Saving...'
-					: editingSource ?
-						'Update Source'
-					:	'Add Source'}
-				</button>
-			</div>
-		</form>
-	);
-}
-
-function TagManager({ tags, onUpdate }: any) {
-	const [newTag, setNewTag] = useState('');
-	const [loading, setLoading] = useState(false);
-
-	const handleAddTag = async (e: any) => {
-		e.preventDefault();
-		if (!newTag) return;
-		setLoading(true);
-		try {
-			const res = await fetch('/api/context/tags', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ tag: newTag }),
-			});
-			if (!res.ok) throw new Error('Failed to add tag');
-			setNewTag('');
-			onUpdate();
-		} catch (err: any) {
-			alert(err.message);
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const handleRemoveTag = async (tag: string) => {
-		try {
-			const res = await fetch('/api/context/tags', {
-				method: 'DELETE',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ tag }),
-			});
-			if (!res.ok) throw new Error('Failed to remove tag');
-			onUpdate();
-		} catch (err: any) {
-			alert(err.message);
-		}
-	};
-
-	return (
-		<div className='panel portal-card'>
-			<div className='portal-card-header'>
-				<h3>Manage Tags (Generates URLs)</h3>
-			</div>
-			<form
-				onSubmit={handleAddTag}
-				className='context-tag-input-row'
-				style={{ marginBottom: '12px' }}>
-				<input
-					type='text'
-					value={newTag}
-					onChange={(e) => setNewTag(e.target.value)}
-					placeholder='Add tag (e.g. $AAPL, AI)'
-				/>
-				<button
-					type='submit'
-					className='btn btn-primary'
-					disabled={loading}>
-					+
-				</button>
-			</form>
-			<div className='portal-tags-list'>
-				{tags.map((tag: string) => (
-					<span
-						key={tag}
-						className='portal-tag-pill is-active'>
-						{tag}
-						<button
-							onClick={() => handleRemoveTag(tag)}
-							className='portal-tag-remove'>
-							×
-						</button>
-					</span>
-				))}
-			</div>
-		</div>
-	);
-}
+// TagManager removed per user request (Manage Tags section)
 
 export default function PipelinePage() {
 	const [data, setData] = useState<any>(null);
@@ -590,7 +239,7 @@ export default function PipelinePage() {
 					<div className='context-ticker-track'>
 						{items.map((item, index) => (
 							<FeedCard
-								key={item.id || item.link || item.title || `${keyPrefix}-${index}`}
+								key={`${keyPrefix}-${index}-${String(item.id || item.link || item.title || 'item')}`}
 								item={item}
 								className='context-feed-stream-item'
 								timestamp={formatArticleTimestamp(item.publishedAt, item.discoveredAt)}
@@ -652,22 +301,6 @@ export default function PipelinePage() {
 						</div>
 					</div>
 
-					<ContextFeedColumn
-						columnKey='pipeline'
-						monitor={monitorData}
-						activeTag={pipelineLaneTag}
-						contextFilter='all'
-						columnTitle='Tag Lane'
-						showComposer={true}
-						allowActiveTagClear={true}
-						onClearActiveTag={() => setTagFeedInput('')}
-						onSelectTag={(tag: string) => setTagFeedInput(String(tag || '').trim())}
-						onAddTag={handleAddPipelineTag}
-						draftTagValue={tagFeedInput}
-						onDraftTagChange={(tag: string) => setTagFeedInput(tag)}
-						itemFilter={pipelineItemFilter}
-					/>
-
 					{pipelineTagBaseUrl && (
 						<div className='panel portal-card'>
 							<div className='portal-card-header'>
@@ -695,15 +328,7 @@ export default function PipelinePage() {
 						</div>
 					)}
 
-					<TagManager
-						tags={data.tags}
-						onUpdate={loadData}
-					/>
-					<SourceForm
-						onAdd={loadData}
-						editingSource={editingSource}
-						onCancelEdit={() => setEditingSource(null)}
-					/>
+					{/* Custom source form removed per user request */}
 				</div>
 
 				<div className='pipeline-column portal-column-wide'>
@@ -764,7 +389,7 @@ export default function PipelinePage() {
 									/>
 								</div>
 								<div className='portal-tag-feed-note'>
-									Use this tag to preview feeds built from a base URL like <code>https://x.com/search?q={'{tag}'}&amp;f=live</code>. Preview updates instantly as you type.
+									Use this tag to preview feeds built from a base URL like <code>https://twitter.com/search?q={'{tag}'}&amp;f=live</code>. Preview updates instantly as you type.
 								</div>
 							</div>
 							<div className='portal-list portal-list-large'>
@@ -1010,20 +635,7 @@ export default function PipelinePage() {
 					})}
 				</div>
 
-				<div className='pipeline-column pipeline-column-tag-preview'>
-					{renderLiveFeedCard({
-						title: 'Live Tag Preview',
-						items: tagDrivenLiveFeedItems,
-						meta: (
-							<>
-								<span>{selectedTagFeedValue || 'No tag selected'}</span>
-								<span>{tagDrivenLiveFeedItems.length} matching live items</span>
-							</>
-						),
-						emptyMessage: selectedTagFeedValue ? 'No live items yet for this tag. Try refreshing the catalog.' : 'Enter a tag to start the live tag preview.',
-						keyPrefix: 'tag-live-feed',
-					})}
-				</div>
+				{/* Tag lane and tag-preview removed per user request */}
 			</div>
 		</div>
 	);

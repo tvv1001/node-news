@@ -1,19 +1,12 @@
-function normalizeValue(value = '') {
-	return String(value || '').trim();
-}
+/**
+ * Minimal xSessionStore shim to provide active X credentials if present.
+ */
 
 export function getActiveXCredentials() {
-	const authToken = normalizeValue(process.env.X_AUTH_TOKEN);
-	const csrfToken = normalizeValue(process.env.X_CSRF_TOKEN);
-
-	if (!authToken || !csrfToken) return null;
-
-	return {
-		authToken,
-		csrfToken,
-	};
+	if (process.env.X_AUTH_TOKEN && process.env.X_CSRF_TOKEN) {
+		return { authToken: process.env.X_AUTH_TOKEN, csrfToken: process.env.X_CSRF_TOKEN };
+	}
+	return null;
 }
 
-export function hasActiveXCredentials() {
-	return Boolean(getActiveXCredentials());
-}
+export default { getActiveXCredentials };
