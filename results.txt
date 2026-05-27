@@ -1,0 +1,557 @@
+TAP version 13
+# 2026-05-17T04:12:51.831Z [[32minfo[39m]: Initializing lightweight organization extractor...
+# 2026-05-17T04:12:51.833Z [[32minfo[39m]: Organization extractor ready.
+# Subtest: buildSearchEngineQueries adds document-heavy variants for research-documents profile
+ok 1 - buildSearchEngineQueries adds document-heavy variants for research-documents profile
+  ---
+  duration_ms: 1.835308
+  ...
+# Subtest: buildYahooSearchQueries uses bounded document-heavy variants for research-documents profile
+ok 2 - buildYahooSearchQueries uses bounded document-heavy variants for research-documents profile
+  ---
+  duration_ms: 0.660011
+  ...
+# Subtest: finance-oriented research-documents queries prefer SEC and filing language
+ok 3 - finance-oriented research-documents queries prefer SEC and filing language
+  ---
+  duration_ms: 0.265898
+  ...
+# Subtest: science-oriented research-documents queries prefer journals and preprints
+ok 4 - science-oriented research-documents queries prefer journals and preprints
+  ---
+  duration_ms: 0.251251
+  ...
+# Subtest: policy-oriented Yahoo research-documents queries prefer government and legal-document sources
+ok 5 - policy-oriented Yahoo research-documents queries prefer government and legal-document sources
+  ---
+  duration_ms: 0.335355
+  ...
+# Subtest: advanced operator queries stay untouched even with research-documents profile
+ok 6 - advanced operator queries stay untouched even with research-documents profile
+  ---
+  duration_ms: 0.843989
+  ...
+# Subtest: extracts Google AI Overview text from processed result blocks
+ok 7 - extracts Google AI Overview text from processed result blocks
+  ---
+  duration_ms: 5.452326
+  ...
+# Subtest: extracts Google AI Overview text from fallback selector blocks
+ok 8 - extracts Google AI Overview text from fallback selector blocks
+  ---
+  duration_ms: 0.814986
+  ...
+# Subtest: extracts Google AI Overview text from the expanded m-x-content container
+ok 9 - extracts Google AI Overview text from the expanded m-x-content container
+  ---
+  duration_ms: 0.726443
+  ...
+# Subtest: captures Bing AI text from the full answer block shape
+ok 10 - captures Bing AI text from the full answer block shape
+  ---
+  duration_ms: 1.371647
+  ...
+# Subtest: extracts Yahoo search results from HTML fallback markup
+ok 11 - extracts Yahoo search results from HTML fallback markup
+  ---
+  duration_ms: 2.632251
+  ...
+# Subtest: preserves Google AI when fallback web results are used
+ok 12 - preserves Google AI when fallback web results are used
+  ---
+  duration_ms: 0.224292
+  ...
+# Subtest: keeps hidden Google AI citation results while still falling back to visible web results
+ok 13 - keeps hidden Google AI citation results while still falling back to visible web results
+  ---
+  duration_ms: 0.14132
+  ...
+# Subtest: keeps Google AI supporting article results while still falling back to visible web results
+ok 14 - keeps Google AI supporting article results while still falling back to visible web results
+  ---
+  duration_ms: 0.193615
+  ...
+# Subtest: omits Google AI when none was extracted
+ok 15 - omits Google AI when none was extracted
+  ---
+  duration_ms: 0.108659
+  ...
+# Subtest: builds crawlable but hidden Google AI citation results and ignores policy links
+ok 16 - builds crawlable but hidden Google AI citation results and ignores policy links
+  ---
+  duration_ms: 0.929667
+  ...
+# Subtest: builds visible crawlable Google AI supporting article results from rhs-col cards
+ok 17 - builds visible crawlable Google AI supporting article results from rhs-col cards
+  ---
+  duration_ms: 0.50706
+  ...
+# Subtest: prefers crawled page previews over longer raw search snippets for duplicate URLs
+ok 18 - prefers crawled page previews over longer raw search snippets for duplicate URLs
+  ---
+  duration_ms: 1.025993
+  ...
+# Subtest: still prefers the longer snippet when duplicate results have the same crawl status
+ok 19 - still prefers the longer snippet when duplicate results have the same crawl status
+  ---
+  duration_ms: 0.219974
+  ...
+# Subtest: preserves full crawled content for merged result cards
+ok 20 - preserves full crawled content for merged result cards
+  ---
+  duration_ms: 0.225173
+  ...
+# Subtest: sanitizeSearchSnippet strips AI disclaimer footer and source-label suffix
+ok 21 - sanitizeSearchSnippet strips AI disclaimer footer and source-label suffix
+  ---
+  duration_ms: 0.623144
+  ...
+# Subtest: sanitizeSearchSnippet leaves a clean ordinary snippet unchanged
+ok 22 - sanitizeSearchSnippet leaves a clean ordinary snippet unchanged
+  ---
+  duration_ms: 0.139857
+  ...
+# Subtest: keeps matching article results separate instead of merging them by URL
+ok 23 - keeps matching article results separate instead of merging them by URL
+  ---
+  duration_ms: 0.165564
+  ...
+# Subtest: builds a direct source result so a provided PDF URL appears in search results
+ok 24 - builds a direct source result so a provided PDF URL appears in search results
+  ---
+  duration_ms: 0.30508
+  ...
+# Subtest: suppresses non-English direct source pages from search results
+ok 25 - suppresses non-English direct source pages from search results
+  ---
+  duration_ms: 0.088663
+  ...
+# Subtest: omits blocked results from normalized search results
+ok 26 - omits blocked results from normalized search results
+  ---
+  duration_ms: 0.132062
+  ...
+# Subtest: omits quantum-host results from normalized search results
+ok 27 - omits quantum-host results from normalized search results
+  ---
+  duration_ms: 0.108349
+  ...
+# Subtest: does not extract corporate suffix organizations
+ok 28 - does not extract corporate suffix organizations
+  ---
+  duration_ms: 2.489799
+  ...
+1..28
+# tests 28
+# suites 0
+# pass 28
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 854.422291
+TAP version 13
+# Subtest: extracts meaningful metadata from inline dataLayer payloads
+ok 1 - extracts meaningful metadata from inline dataLayer payloads
+  ---
+  duration_ms: 6.731183
+  ...
+# Subtest: finds supporting PDF links including arXiv /pdf routes
+ok 2 - finds supporting PDF links including arXiv /pdf routes
+  ---
+  duration_ms: 3.534577
+  ...
+# Subtest: finds Digital Commons viewcontent downloads from repository landing pages
+ok 3 - finds Digital Commons viewcontent downloads from repository landing pages
+  ---
+  duration_ms: 0.585224
+  ...
+# Subtest: extracts image captions and alt text as supporting image context
+ok 4 - extracts image captions and alt text as supporting image context
+  ---
+  duration_ms: 6.102659
+  ...
+# Subtest: skips non-renderable inline data-uri images from previewable image entries
+ok 5 - skips non-renderable inline data-uri images from previewable image entries
+  ---
+  duration_ms: 1.965467
+  ...
+# Subtest: filters logos, navigation, footer, and social images from extracted image context
+ok 6 - filters logos, navigation, footer, and social images from extracted image context
+  ---
+  duration_ms: 2.409943
+  ...
+# Subtest: filters promotional marketing images and filename-only ad assets from image context
+ok 7 - filters promotional marketing images and filename-only ad assets from image context
+  ---
+  duration_ms: 2.68651
+  ...
+# Subtest: detects likely English and non-English page text
+ok 8 - detects likely English and non-English page text
+  ---
+  duration_ms: 0.842837
+  ...
+# Subtest: embeds photo-like assets as base64 data URIs
+ok 9 - embeds photo-like assets as base64 data URIs
+  ---
+  duration_ms: 0.429077
+  ...
+# Subtest: embeds diagrams as svg data URIs containing the original raster bytes
+ok 10 - embeds diagrams as svg data URIs containing the original raster bytes
+  ---
+  duration_ms: 0.425892
+  ...
+# Subtest: extracts the related arXiv HTML page from an abstract page for figure harvesting
+ok 11 - extracts the related arXiv HTML page from an abstract page for figure harvesting
+  ---
+  duration_ms: 0.716916
+  ...
+# Subtest: extracts concise arXiv abstract details and matching same-paper PDF link
+ok 12 - extracts concise arXiv abstract details and matching same-paper PDF link
+  ---
+  duration_ms: 3.564812
+  ...
+# Subtest: detects blocked anti-bot interstitial pages
+ok 13 - detects blocked anti-bot interstitial pages
+  ---
+  duration_ms: 0.664429
+  ...
+# Subtest: does not flag ordinary article content as blocked
+ok 14 - does not flag ordinary article content as blocked
+  ---
+  duration_ms: 0.598418
+  ...
+1..14
+# tests 14
+# suites 0
+# pass 14
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 853.501742
+TAP version 13
+# Subtest: registerContextKeywords normalizes and deduplicates keywords
+ok 1 - registerContextKeywords normalizes and deduplicates keywords
+  ---
+  duration_ms: 1.290358
+  ...
+# Subtest: subscribeToContextFeedMonitor receives keyword update snapshots
+ok 2 - subscribeToContextFeedMonitor receives keyword update snapshots
+  ---
+  duration_ms: 0.272389
+  ...
+# Subtest: replaceContextKeywords swaps tag words and removeContextKeywords deletes selected tags
+ok 3 - replaceContextKeywords swaps tag words and removeContextKeywords deletes selected tags
+  ---
+  duration_ms: 0.869275
+  ...
+# Subtest: asset tags match stock-related company news even without a dollar ticker in the article
+ok 4 - asset tags match stock-related company news even without a dollar ticker in the article
+  ---
+  duration_ms: 1.158046
+  ...
+# Subtest: bare known stock symbols inherit finance alias matching
+ok 5 - bare known stock symbols inherit finance alias matching
+  ---
+  duration_ms: 5.299767
+  ...
+# Subtest: asset tags match broader Tesla stock market language
+ok 6 - asset tags match broader Tesla stock market language
+  ---
+  duration_ms: 0.283029
+  ...
+# Subtest: asset tags match Tesla equity coverage with shareholder language
+ok 7 - asset tags match Tesla equity coverage with shareholder language
+  ---
+  duration_ms: 0.297836
+  ...
+# Subtest: asset tags do not match broad company mentions when the article is not stock-related
+ok 8 - asset tags do not match broad company mentions when the article is not stock-related
+  ---
+  duration_ms: 0.297957
+  ...
+# Subtest: asset tags match news feed items that mention the ticker alias even without stock-market wording
+ok 9 - asset tags match news feed items that mention the ticker alias even without stock-market wording
+  ---
+  duration_ms: 0.387161
+  ...
+# Subtest: asset tags still match direct ticker mentions
+ok 10 - asset tags still match direct ticker mentions
+  ---
+  duration_ms: 0.287808
+  ...
+# Subtest: OR expressions match when either term is present
+ok 11 - OR expressions match when either term is present
+  ---
+  duration_ms: 0.791512
+  ...
+# Subtest: AND expressions require both terms to be present
+ok 12 - AND expressions require both terms to be present
+  ---
+  duration_ms: 0.263303
+  ...
+# Subtest: mixed AND/OR expressions support grouped matching with AND precedence
+ok 13 - mixed AND/OR expressions support grouped matching with AND precedence
+  ---
+  duration_ms: 0.372133
+  ...
+# Subtest: quoted phrases and exclusion operators work in tag matching
+ok 14 - quoted phrases and exclusion operators work in tag matching
+  ---
+  duration_ms: 0.34318
+  ...
+# Subtest: site and source operators work in tag matching
+ok 15 - site and source operators work in tag matching
+  ---
+  duration_ms: 0.525234
+  ...
+# Subtest: before and after operators work in tag matching
+ok 16 - before and after operators work in tag matching
+  ---
+  duration_ms: 0.385237
+  ...
+# Subtest: buildGoogleNewsFeedUrl preserves advanced Google-style operators
+ok 17 - buildGoogleNewsFeedUrl preserves advanced Google-style operators
+  ---
+  duration_ms: 0.864286
+  ...
+# Subtest: buildFeedSearchKeywords expands pipe-separated expressions into separate RSS queries
+ok 18 - buildFeedSearchKeywords expands pipe-separated expressions into separate RSS queries
+  ---
+  duration_ms: 0.434928
+  ...
+# Subtest: buildFeedSearchKeywords preserves shared filters while splitting OR branches
+ok 19 - buildFeedSearchKeywords preserves shared filters while splitting OR branches
+  ---
+  duration_ms: 0.269324
+  ...
+# Subtest: advanced search operators are preserved for search engine queries
+ok 20 - advanced search operators are preserved for search engine queries
+  ---
+  duration_ms: 0.558956
+  ...
+# Subtest: buildRedditFeedUrl preserves boolean expressions for non-asset tags
+ok 21 - buildRedditFeedUrl preserves boolean expressions for non-asset tags
+  ---
+  duration_ms: 0.551172
+  ...
+# Subtest: buildGoogleNewsFeedUrl builds a tag-scoped Google News RSS feed
+ok 22 - buildGoogleNewsFeedUrl builds a tag-scoped Google News RSS feed
+  ---
+  duration_ms: 0.372984
+  ...
+# Subtest: buildGoogleNewsFeedUrl expands asset tags into stock-aware Google News queries
+ok 23 - buildGoogleNewsFeedUrl expands asset tags into stock-aware Google News queries
+  ---
+  duration_ms: 0.331929
+  ...
+# Subtest: buildGoogleNewsXFeedUrl adds an x.com site restriction for live social feeds
+ok 24 - buildGoogleNewsXFeedUrl adds an x.com site restriction for live social feeds
+  ---
+  duration_ms: 0.461817
+  ...
+# Subtest: buildGoogleNewsQuoraFeedUrl adds a quora.com site restriction for quick-answer feeds
+ok 25 - buildGoogleNewsQuoraFeedUrl adds a quora.com site restriction for quick-answer feeds
+  ---
+  duration_ms: 0.28314
+  ...
+# Subtest: buildGoogleSearchHomepageUrl uses the plain Google web search structure for general search
+ok 26 - buildGoogleSearchHomepageUrl uses the plain Google web search structure for general search
+  ---
+  duration_ms: 0.20701
+  ...
+# Subtest: buildGoogleNewsSearchHomepageUrl uses the clean newest-first Google News search parameters
+ok 27 - buildGoogleNewsSearchHomepageUrl uses the clean newest-first Google News search parameters
+  ---
+  duration_ms: 0.296414
+  ...
+# Subtest: buildGoogleXStockSearchKeyword uses a site-scoped cashtag query for asset tags
+ok 28 - buildGoogleXStockSearchKeyword uses a site-scoped cashtag query for asset tags
+  ---
+  duration_ms: 0.176754
+  ...
+# Subtest: buildGoogleXStockSearchKeyword suppresses unknown cashtags when the stock catalog is loaded
+ok 29 - buildGoogleXStockSearchKeyword suppresses unknown cashtags when the stock catalog is loaded
+  ---
+  duration_ms: 0.184609
+  ...
+# Subtest: buildGoogleXStockSearchFeed builds a dedicated Google web-search fallback for stock cashtags
+ok 30 - buildGoogleXStockSearchFeed builds a dedicated Google web-search fallback for stock cashtags
+  ---
+  duration_ms: 0.371551
+  ...
+# Subtest: buildGoogleXStockSearchFeed skips unknown cashtags when the stock catalog is loaded
+ok 31 - buildGoogleXStockSearchFeed skips unknown cashtags when the stock catalog is loaded
+  ---
+  duration_ms: 0.145086
+  ...
+# Subtest: buildGoogleNewsTopicFeedUrl builds a topic-scoped Google News RSS feed
+ok 32 - buildGoogleNewsTopicFeedUrl builds a topic-scoped Google News RSS feed
+  ---
+  duration_ms: 1.878577
+  ...
+# Subtest: buildActuallyRelevantFeedUrl builds global and issue-scoped RSS feed URLs
+ok 33 - buildActuallyRelevantFeedUrl builds global and issue-scoped RSS feed URLs
+  ---
+  duration_ms: 0.291946
+  ...
+# Subtest: parseConfiguredAlertFeeds accepts string and object feed entries
+ok 34 - parseConfiguredAlertFeeds accepts string and object feed entries
+  ---
+  duration_ms: 0.305862
+  ...
+# Subtest: buildRedditFeedUrl builds a newest-first global Reddit search RSS feed
+ok 35 - buildRedditFeedUrl builds a newest-first global Reddit search RSS feed
+  ---
+  duration_ms: 0.25586
+  ...
+# Subtest: buildRedditWallStreetBetsFeedUrl builds a newest-first subreddit search RSS feed
+ok 36 - buildRedditWallStreetBetsFeedUrl builds a newest-first subreddit search RSS feed
+  ---
+  duration_ms: 0.242355
+  ...
+# Subtest: buildRedditSubredditFeedUrl builds a finance subreddit RSS feed for asset tags
+ok 37 - buildRedditSubredditFeedUrl builds a finance subreddit RSS feed for asset tags
+  ---
+  duration_ms: 0.380449
+  ...
+# Subtest: buildRedditFeedUrl expands stock tags into ticker and company aliases for Reddit searches
+ok 38 - buildRedditFeedUrl expands stock tags into ticker and company aliases for Reddit searches
+  ---
+  duration_ms: 0.258484
+  ...
+# Subtest: buildRedditFeedUrl expands bare known stock symbols into ticker and company aliases for Reddit searches
+ok 39 - buildRedditFeedUrl expands bare known stock symbols into ticker and company aliases for Reddit searches
+  ---
+  duration_ms: 0.276347
+  ...
+# Subtest: selectMatchesWithKeywordCoverage keeps x and reddit coverage visible for finance tags
+ok 40 - selectMatchesWithKeywordCoverage keeps x and reddit coverage visible for finance tags
+  ---
+  duration_ms: 0.712508
+  ...
+# Subtest: selectMatchesWithKeywordCoverage prefers multiple x and reddit matches for finance tags before generic sources
+ok 41 - selectMatchesWithKeywordCoverage prefers multiple x and reddit matches for finance tags before generic sources
+  ---
+  duration_ms: 0.475212
+  ...
+# Subtest: selectMatchesWithKeywordCoverage promotes x and reddit matches for non-finance tags in the left lanes
+ok 42 - selectMatchesWithKeywordCoverage promotes x and reddit matches for non-finance tags in the left lanes
+  ---
+  duration_ms: 0.153311
+  ...
+# Subtest: sortContextFeedCatalog prioritizes reddit, x, and quora RSS feeds ahead of search-engine crawls
+ok 43 - sortContextFeedCatalog prioritizes reddit, x, and quora RSS feeds ahead of search-engine crawls
+  ---
+  duration_ms: 0.254287
+  ...
+# Subtest: partitionContextFeedCatalog serves RSS feeds first and leaves search-engine feeds for background augmentation
+ok 44 - partitionContextFeedCatalog serves RSS feeds first and leaves search-engine feeds for background augmentation
+  ---
+  duration_ms: 0.270867
+  ...
+# Subtest: buildInvestingStockNewsFeeds returns stock-news RSS sources for finance asset tags
+ok 45 - buildInvestingStockNewsFeeds returns stock-news RSS sources for finance asset tags
+  ---
+  duration_ms: 0.194477
+  ...
+# Subtest: getBuiltinGeneralNewsSources includes Investing.com and curated Wired feeds for the far-left feed
+ok 46 - getBuiltinGeneralNewsSources includes Investing.com and curated Wired feeds for the far-left feed
+  ---
+  duration_ms: 0.213491
+  ...
+# Subtest: extractPublishedAtFromSearchResult reads relative dates from search result snippets
+ok 47 - extractPublishedAtFromSearchResult reads relative dates from search result snippets
+  ---
+  duration_ms: 0.723808
+  ...
+# Subtest: extractPublishedAtFromSearchResult reads date metadata from crawled page dataLayer entries
+ok 48 - extractPublishedAtFromSearchResult reads date metadata from crawled page dataLayer entries
+  ---
+  duration_ms: 0.208833
+  ...
+# Subtest: extractPublishedAtFromSearchResult derives the publish date from an x.com status url
+ok 49 - extractPublishedAtFromSearchResult derives the publish date from an x.com status url
+  ---
+  duration_ms: 0.232828
+  ...
+# Subtest: normalizeSearchEngineResultItem keeps a best preview image for live feed cards
+ok 50 - normalizeSearchEngineResultItem keeps a best preview image for live feed cards
+  ---
+  duration_ms: 0.957467
+  ...
+# Subtest: extractFeedItemPreviewImage picks image enclosures and inline images for RSS items
+ok 51 - extractFeedItemPreviewImage picks image enclosures and inline images for RSS items
+  ---
+  duration_ms: 1.464808
+  ...
+# Subtest: extractFeedItemPreviewImage skips generic logos and promotional image assets
+ok 52 - extractFeedItemPreviewImage skips generic logos and promotional image assets
+  ---
+  duration_ms: 0.295201
+  ...
+# Subtest: sortContextMatchesNewestFirst keeps published items ahead of discovery-only items while remaining newest-first
+ok 53 - sortContextMatchesNewestFirst keeps published items ahead of discovery-only items while remaining newest-first
+  ---
+  duration_ms: 0.157549
+  ...
+# Subtest: sortContextMatchesNewestFirst keeps published items ahead of discovery-only items
+ok 54 - sortContextMatchesNewestFirst keeps published items ahead of discovery-only items
+  ---
+  duration_ms: 0.142883
+  ...
+# Subtest: selectMatchesWithKeywordCoverage keeps quieter tags visible when noisier tags dominate the newest feed
+ok 55 - selectMatchesWithKeywordCoverage keeps quieter tags visible when noisier tags dominate the newest feed
+  ---
+  duration_ms: 0.491562
+  ...
+# Subtest: selectGeneralNewsSources keeps enabled article-news feeds and de-duplicates repeated domains
+ok 56 - selectGeneralNewsSources keeps enabled article-news feeds and de-duplicates repeated domains
+  ---
+  duration_ms: 0.688243
+  ...
+# Subtest: normalizeHackerNewsStoryItem maps a Hacker News story into the left-lane news shape
+ok 57 - normalizeHackerNewsStoryItem maps a Hacker News story into the left-lane news shape
+  ---
+  duration_ms: 0.265928
+  ...
+# Subtest: normalizeActuallyRelevantStory maps an API story into the shared left-lane news shape
+ok 58 - normalizeActuallyRelevantStory maps an API story into the shared left-lane news shape
+  ---
+  duration_ms: 0.28877
+  ...
+# Subtest: normalizeHackerNewsStoryItem falls back to the Hacker News discussion URL when no story URL exists
+ok 59 - normalizeHackerNewsStoryItem falls back to the Hacker News discussion URL when no story URL exists
+  ---
+  duration_ms: 0.154233
+  ...
+1..59
+# tests 59
+# suites 0
+# pass 59
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 846.859653
+TAP version 13
+# Subtest: parseFeedItemTimestamp prefers feed date fields and returns 0 for invalid dates
+ok 1 - parseFeedItemTimestamp prefers feed date fields and returns 0 for invalid dates
+  ---
+  duration_ms: 1.435244
+  ...
+# Subtest: sortFeedItemsNewestFirst orders mixed feed items from newest to oldest
+ok 2 - sortFeedItemsNewestFirst orders mixed feed items from newest to oldest
+  ---
+  duration_ms: 1.240447
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 412.702229

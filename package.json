@@ -1,0 +1,38 @@
+{
+	"name": "searching-contextual",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@10.33.0",
+	"scripts": {
+		"postinstall": "pnpm --dir server install",
+		"start": "pnpm run dev",
+		"dev": "pnpm run dev:app",
+		"dev:app": "concurrently -k \"pnpm run dev:client:only\" \"pnpm run dev:server\"",
+		"dev:client:only": "node ./scripts/kill-ports.js 3000 && next dev -p 3000",
+		"dev:client": "concurrently -k \"pnpm run dev:server\" \"pnpm run dev:client:only\"",
+		"dev:server": "node ./scripts/kill-ports.js 3001 && pnpm --dir server run dev",
+		"stop": "node ./scripts/kill-ports.js 3000 3001",
+		"collect-okcounty": "node ./scripts/okcounty-collect.js",
+		"update:stock-symbols": "node ./scripts/update-stock-symbols.js",
+		"build": "next build",
+		"preview": "next start"
+	},
+	"devDependencies": {
+		"@types/node": "^25.9.1",
+		"@types/react": "^19.2.15",
+		"@types/react-dom": "^19.2.3",
+		"@typescript/native-preview": "7.0.0-dev.20260519.1",
+		"concurrently": "^9.2.1",
+		"xlsx": "^0.18.5"
+	},
+	"dependencies": {
+		"csv-parse": "^6.2.1",
+		"next": "^16.2.6",
+		"puppeteer": "^25.0.4",
+		"puppeteer-extra": "^3.3.6",
+		"puppeteer-extra-plugin-stealth": "^2.11.2",
+		"react": "^19.2.6",
+		"react-dom": "^19.2.6"
+	}
+}

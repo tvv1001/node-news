@@ -1,0 +1,84 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - navigation [ref=e4]:
+      - generic [ref=e5]: News & Research
+      - generic [ref=e6]:
+        - link "Pipeline" [ref=e7] [cursor=pointer]:
+          - /url: /pipeline
+        - link "Portal" [ref=e8] [cursor=pointer]:
+          - /url: /rss-portal
+    - generic [ref=e9]:
+      - complementary [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e13]:
+            - generic [ref=e14]: Add feed tag for News Lane
+            - textbox "Add feed tag for News Lane" [ref=e15]:
+              - /placeholder: Add a tag like $tsla, "quantum computing", ai OR robotics
+            - button "Change" [ref=e16] [cursor=pointer]
+          - generic [ref=e18]:
+            - generic [ref=e19]: All news
+            - button "Clear tag all-news" [ref=e20] [cursor=pointer]: ×
+        - generic [ref=e21]:
+          - heading "News Lane" [level=3] [ref=e23]
+          - generic [ref=e27]: No all-news stories are available yet. Fresh headlines will appear here as the feed refreshes.
+      - complementary [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e31]:
+            - generic [ref=e32]: Add feed tag for Tag Lane
+            - textbox "Add feed tag for Tag Lane" [ref=e33]:
+              - /placeholder: Add a tag like $tsla, "quantum computing", ai OR robotics
+            - button "Add" [ref=e34] [cursor=pointer]
+          - generic [ref=e36]: Add one tag to make this column independent.
+        - generic [ref=e37]:
+          - heading "Tag Lane" [level=3] [ref=e39]
+          - generic [ref=e43]: Select or add a tag to start this feed view.
+      - complementary [ref=e44]:
+        - generic [ref=e45]:
+          - generic [ref=e47]:
+            - generic [ref=e48]: Add feed tag for Research Lane
+            - textbox "Add feed tag for Research Lane" [ref=e49]:
+              - /placeholder: Add a tag like $tsla, "quantum computing", ai OR robotics
+            - button "Add" [ref=e50] [cursor=pointer]
+          - generic [ref=e52]: Add one tag to make this column independent.
+        - generic [ref=e53]:
+          - heading "Research Lane" [level=3] [ref=e55]
+          - generic [ref=e59]: Select or add a tag to start this feed view.
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - generic [ref=e63]:
+              - generic [ref=e64]:
+                - generic [ref=e65]: Slow Crawler
+                - generic [ref=e66]: Crawling documents and source pages for quantum lattice holographic.
+              - generic [ref=e67]: 0%
+            - generic [ref=e70]: Queueing crawl…
+          - generic [ref=e71]:
+            - generic [ref=e72]:
+              - generic [ref=e73]: Slow crawler
+              - generic [ref=e74]: Slow crawl mode scans source pages and supporting documents for quantum lattice holographic. It is intentionally slower than the live feed, but much nosier—in a good way.
+            - generic [ref=e76]:
+              - generic [ref=e77]: Crawler query
+              - textbox "Crawler query" [ref=e78]:
+                - /placeholder: Enter a tag or operator-rich query, e.g. site:gov "land records" after:2025-01-01
+                - text: quantum lattice holographic
+            - generic [ref=e79]:
+              - button "⏳ Crawling…" [disabled] [ref=e80]
+              - button "Reset query" [ref=e81] [cursor=pointer]
+        - generic [ref=e82]:
+          - generic [ref=e85]:
+            - generic [ref=e86]: ⏳
+            - generic [ref=e87]:
+              - heading "Crawling quantum lattice holographic…" [level=3] [ref=e88]
+              - paragraph [ref=e89]: Scanning sites and supporting documents related to quantum lattice holographic.
+          - generic [ref=e92]:
+            - generic [ref=e93]:
+              - heading "AI responses for quantum lattice holographic" [level=2] [ref=e95]
+              - generic [ref=e96]: …
+            - generic [ref=e97]:
+              - generic [ref=e98]: 🤖
+              - generic [ref=e99]:
+                - heading "Waiting for model output" [level=3] [ref=e100]
+                - paragraph [ref=e101]: AI summaries will land here as the crawl finishes collecting and ranking sources.
+  - alert [ref=e102]
+  - button "Theme Settings" [ref=e104] [cursor=pointer]:
+    - img [ref=e105]

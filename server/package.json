@@ -1,0 +1,37 @@
+{
+	"name": "person-search-server",
+	"version": "1.0.0",
+	"description": "Person profile search crawler server",
+	"type": "module",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js",
+		"dev": "node --watch index.js",
+		"start:context": "node contextServiceServer.js",
+		"dev:context": "node --watch contextServiceServer.js",
+		"x:keyword": "node scripts/test-x-scrape.js",
+		"scrapy:crawl": "python3 services/crawler/scrapy_crawler.py"
+	},
+	"dependencies": {
+		"@mozilla/readability": "^0.6.0",
+		"axios": "^1.16.1",
+		"cheerio": "^1.2.0",
+		"cors": "^2.8.6",
+		"dotenv": "^17.4.2",
+		"express": "^5.2.1",
+		"express-rate-limit": "^8.5.2",
+		"fuse.js": "^7.3.0",
+		"helmet": "^8.1.0",
+		"jsdom": "^29.1.1",
+		"lowdb": "^7.0.1",
+		"mammoth": "^1.12.0",
+		"node-nlp": "^4.27.0",
+		"pdf-parse": "^2.4.5",
+		"puppeteer": "^25.0.4",
+		"rss-parser": "^3.13.0",
+		"simplecrawler": "^1.1.9",
+		"typescript": "^6.0.3",
+		"uuid": "^14.0.0",
+		"winston": "^3.19.0"
+	}
+}
