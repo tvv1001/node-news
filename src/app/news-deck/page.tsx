@@ -56,6 +56,11 @@ export default function NewsDeckPage() {
 		return ALL_NEWS_TAG;
 	}, [monitor?.tags, selectedTag]);
 
+	const researchTag = useMemo(() => {
+		if (Array.isArray(monitor?.tags) && monitor.tags.length > 1) return normalizeTagValue(monitor.tags[1]);
+		return '';
+	}, [monitor?.tags]);
+
 	const tagOptions = useMemo(() => {
 		return Array.isArray(monitor?.tags) ? monitor.tags.map(normalizeTagValue).filter(Boolean) : [];
 	}, [monitor?.tags]);
@@ -197,7 +202,7 @@ export default function NewsDeckPage() {
 				<ContextFeedColumn
 					columnKey='research'
 					monitor={monitor || {}}
-					activeTag=''
+					activeTag={researchTag}
 					contextFilter='research'
 					columnTitle='Research'
 					showComposer={false}

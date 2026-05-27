@@ -10,6 +10,7 @@ import {
 	testContextSource,
 	blockContextSource,
 	unblockContextSource,
+	replaceContextTags,
 } from '../../api';
 import FeedCard from '../../components/FeedCard';
 import '../../style.css';
@@ -17,6 +18,8 @@ import '../../style.css';
 export default function SSEDashboardPage() {
 	const [portal, setPortal] = useState<any>(null);
 	const [monitor, setMonitor] = useState<any>({});
+	const [leftTag, setLeftTag] = useState('');
+	const [researchTag, setResearchTag] = useState('');
 	const [rssSnapshot, setRssSnapshot] = useState<any>(null);
 	const [crawlSnapshot, setCrawlSnapshot] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
@@ -31,6 +34,13 @@ export default function SSEDashboardPage() {
 			if (force) await fetchContextMonitor({ refresh: true });
 			const [p, m] = await Promise.all([fetchContextPortal(), fetchContextMonitor()]);
 			setPortal(p || {});
+			// initialize tag inputs from portal
+			const portalTags =
+				Array.isArray(p?.tags) ? p.tags
+				: Array.isArray(p?.tags) ? p.tags
+				: [];
+			setLeftTag(portalTags[0] || '');
+			setResearchTag(portalTags[1] || '');
 			setMonitor(m || {});
 		} catch (err) {
 			console.error(err);
@@ -47,7 +57,16 @@ export default function SSEDashboardPage() {
 				.then((m) => setMonitor(m))
 				.catch(console.error);
 			fetchContextPortal()
-				.then((p) => setPortal(p))
+				.then((p) => {
+					if (p == null) {
+						setPortal(p as any);
+						return;
+					}
+					setPortal(p as any);
+					const portalTags = Array.isArray((p as any).tags) ? (p as any).tags : [];
+					setLeftTag(portalTags[0] || '');
+					setResearchTag(portalTags[1] || '');
+				})
 				.catch(console.error);
 		}, 60000);
 
@@ -251,6 +270,44 @@ export default function SSEDashboardPage() {
 						<div>Started: {portal?.status?.started ? 'yes' : 'no'}</div>
 						<div>Stream version: {portal?.status?.streamVersion}</div>
 						<div>Feeds: {portal?.status?.feedCount}</div>
+						<div style={{ marginTop: 12 }}>
+							<label style={{ display: 'block', marginBottom: 6 }}>Primary Tag (left lanes)</label>
+							<input
+								type='text'
+								value={leftTag}
+								onChange={(e) => setLeftTag(e.target.value)}
+								style={{ width: '100%', marginBottom: 8 }}
+							/>
+							<div style={{ display: 'flex', gap: 8 }}>
+								<button
+									className='btn btn-primary'
+									onClick={async () => {
+										try {
+											const tags = [leftTag, researchTag].filter(Boolean);
+											await replaceContextTags(tags);
+											await load(true);
+										} catch (err: any) {
+											alert(err?.message || 'Failed to set tags');
+										}
+									}}>
+									Set Left Tags
+								</button>
+								<button
+									className='btn btn-secondary'
+									onClick={async () => {
+										setLeftTag('');
+										try {
+											const tags = [researchTag].filter(Boolean);
+											await replaceContextTags(tags);
+											await load(true);
+										} catch (err: any) {
+											alert(err?.message || 'Failed to clear tag');
+										}
+									}}>
+									Clear
+								</button>
+							</div>
+						</div>
 						<div>
 							RSS items:{' '}
 							{Array.isArray(portal?.output?.matches) ?
@@ -474,23 +531,46 @@ export default function SSEDashboardPage() {
 						<div>Started: {portal?.status?.started ? 'yes' : 'no'}</div>
 						<div>Stream version: {portal?.status?.streamVersion}</div>
 						<div>Feeds: {portal?.status?.feedCount}</div>
-					</section>
-					{/* Research lane: slower crawl/research matches */}
-					<section className='panel portal-card'>
-						<h3>Research (slow crawl)</h3>
-						<div className='portal-live-feed-list'>
-							{(Array.isArray(crawlResearchMatches) ? crawlResearchMatches : []).slice(0, 50).map((item: any, i: number) => (
-								<FeedCard
-									key={`research-${i}-${String(item.id || item.link || item.title || '')}`}
-									item={item}
-									className='context-feed-stream-item'
-									timestamp={item.publishedAt || item.discoveredAt}
-									summaryClassName='context-feed-summary'
-									timestampClassName='context-notification-item-meta'
-								/>
-							))}
+						<div style={{ marginTop: 12 }}>
+							<label style={{ display: 'block', marginBottom: 6 }}>Research Tag (right lane)</label>
+							<input
+								type='text'
+								value={researchTag}
+								onChange={(e) => setResearchTag(e.target.value)}
+								style={{ width: '100%', marginBottom: 8 }}
+							/>
+							<div style={{ display: 'flex', gap: 8 }}>
+								<button
+									className='btn btn-primary'
+									onClick={async () => {
+										try {
+											const tags = [leftTag, researchTag].filter(Boolean);
+											await replaceContextTags(tags);
+											await load(true);
+										} catch (err: any) {
+											alert(err?.message || 'Failed to set research tag');
+										}
+									}}>
+									Set Research Tag
+								</button>
+								<button
+									className='btn btn-secondary'
+									onClick={async () => {
+										setResearchTag('');
+										try {
+											const tags = [leftTag].filter(Boolean);
+											await replaceContextTags(tags);
+											await load(true);
+										} catch (err: any) {
+											alert(err?.message || 'Failed to clear tag');
+										}
+									}}>
+									Clear
+								</button>
+							</div>
 						</div>
 					</section>
+					{/* Research lane removed per request */}
 					<section className='panel portal-card portal-sources'>
 						<h3>User Sources (Crawl)</h3>
 						<form
