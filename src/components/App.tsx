@@ -439,11 +439,11 @@ function App() {
 						Pipeline
 					</a>
 					<a
-						href='/rss-portal'
+						href='/sse-dashboard'
 						className='app-nav-link'
 						target='_blank'
 						rel='noopener noreferrer'>
-						Portal
+						SSE Dashboard
 					</a>
 				</div>
 			</nav>

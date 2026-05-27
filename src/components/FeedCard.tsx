@@ -24,6 +24,63 @@ function unescapeHtml(text = '') {
 		.replace(/&#39;/g, "'");
 }
 
+const IMAGE_SRC_RE = /^data:image\/|^https?:\/\/.*\.(?:avif|apng|bmp|gif|jpe?g|jfif|pjpeg|png|svg|webp)(?:[?#].*)?$/i;
+const VIDEO_SRC_RE = /^https?:\/\/.*\.(?:mp4|mov|webm|ogg|mpg|mpeg|m4v)(?:[?#].*)?$/i;
+const REDDIT_HOST_RE = /(^|\.)reddit\.com$/i;
+const REDDIT_SHORT_RE = /^redd\.it$/i;
+
+function isImageUrl(value = '') {
+	return IMAGE_SRC_RE.test(String(value || '').trim());
+}
+
+function isDirectVideoUrl(value = '') {
+	return VIDEO_SRC_RE.test(String(value || '').trim()) || /^https?:\/\/v\.redd\.it\//i.test(String(value || '').trim());
+}
+
+function getRedditThreadId(value = '') {
+	try {
+		const url = new URL(String(value || '').trim());
+		const hostname = url.hostname.toLowerCase().replace(/^www\./, '');
+		if (REDDIT_SHORT_RE.test(hostname)) {
+			const id = url.pathname.split('/').filter(Boolean)[0];
+			return id || '';
+		}
+		if (REDDIT_HOST_RE.test(hostname)) {
+			const match = url.pathname.match(/\/comments\/([a-z0-9]+)(?:\/|$)/i);
+			return match?.[1] || '';
+		}
+	} catch {
+		return '';
+	}
+	return '';
+}
+
+function buildRedditEmbedUrl(value = '') {
+	const threadId = getRedditThreadId(value);
+	if (!threadId) return '';
+	return `https://www.redditmedia.com/comments/${threadId}?ref_source=embed&ref=share&embed=true`;
+}
+
+function getPreviewMediaMode(item: any = {}) {
+	const rawSrc = String(item?.previewImage?.src || '').trim();
+	if (!rawSrc) return { type: 'none', src: '' };
+
+	if (isImageUrl(rawSrc)) {
+		return { type: 'image', src: rawSrc };
+	}
+
+	if (isDirectVideoUrl(rawSrc)) {
+		return { type: 'video', src: rawSrc };
+	}
+
+	const redditEmbedUrl = buildRedditEmbedUrl(item.link || rawSrc);
+	if (redditEmbedUrl) {
+		return { type: 'reddit-embed', src: redditEmbedUrl };
+	}
+
+	return { type: 'unknown', src: rawSrc };
+}
+
 function FeedCard({
 	item = {},
 	className = '',
@@ -36,13 +93,16 @@ function FeedCard({
 }: FeedCardProps) {
 	const [hidePreviewImage, setHidePreviewImage] = useState(false);
 	const [isExpanded, setIsExpanded] = useState(false);
-	const [isImageExpanded, setIsImageExpanded] = useState(false);
+	const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
 	const [needsExpansion, setNeedsExpansion] = useState(false);
 	const [shouldAutoExpand, setShouldAutoExpand] = useState(false);
 	const contentRef = useRef<HTMLDivElement>(null);
 
 	const previewImage = !hidePreviewImage && item?.previewImage?.src ? item.previewImage : null;
-	const imageSrc = useMemo(() => (previewImage?.src ? unescapeHtml(previewImage.src) : ''), [previewImage?.src]);
+	const previewMedia = useMemo(() => getPreviewMediaMode(item), [item]);
+	const isImagePreview = previewMedia.type === 'image';
+	const previewMediaUrl = previewMedia.type === 'video' || previewMedia.type === 'reddit-embed' ? previewMedia.src : '';
+	const imageSrc = useMemo(() => (isImagePreview && previewImage?.src ? unescapeHtml(previewImage.src) : ''), [isImagePreview, previewImage?.src]);
 	const sourceHref = getFeedSourceHref(item);
 	const summaryText = String(item?.summary || '').trim();
 	const isFullStoryInComments = /\bfull story\b.*\bcomments?\b/i.test(summaryText);
@@ -147,38 +207,60 @@ function FeedCard({
 						{item.title}
 					</a>
 				:	<span className={titleClassName}>{item.title}</span>}
-				{previewImage && imageSrc && (
-					<div className={`context-feed-preview ${isImageExpanded ? 'is-expanded' : 'is-collapsed'}`}>
-						<button
-							type='button'
-							className='context-feed-preview-toggle'
-							onClick={(event) => {
-								event.preventDefault();
-								event.stopPropagation();
-								setIsImageExpanded((current) => !current);
-							}}
-							aria-expanded={isImageExpanded}
-							aria-label={isImageExpanded ? 'Collapse image preview' : 'Expand image preview'}>
-							<img
-								src={imageSrc}
-								alt={previewImage.alt || item.title || 'Article image'}
-								loading='lazy'
-								onError={() => setHidePreviewImage(true)}
-							/>
-							<span className='context-feed-preview-toggle-label'>{isImageExpanded ? 'Collapse image' : 'Expand image'}</span>
-						</button>
-						{isImageExpanded && (
-							<button
-								type='button'
-								className='context-feed-preview-close'
-								onClick={(event) => {
-									event.preventDefault();
-									event.stopPropagation();
-									setIsImageExpanded(false);
-								}}>
-								Close image
-							</button>
-						)}
+				{previewImage && (imageSrc || previewMediaUrl) && (
+					<div className={`context-feed-preview ${isPreviewExpanded ? 'is-expanded' : 'is-collapsed'}`}>
+						{isImagePreview ?
+							<>
+								<button
+									type='button'
+									className='context-feed-preview-toggle'
+									onClick={(event) => {
+										event.preventDefault();
+										event.stopPropagation();
+										setIsPreviewExpanded((current) => !current);
+									}}
+									aria-expanded={isPreviewExpanded}
+									aria-label={isPreviewExpanded ? 'Collapse image preview' : 'Expand image preview'}>
+									<img
+										src={imageSrc}
+										alt={previewImage.alt || item.title || 'Article image'}
+										loading='lazy'
+										onError={() => setHidePreviewImage(true)}
+									/>
+									<span className='context-feed-preview-toggle-label'>{isPreviewExpanded ? 'Collapse image' : 'Expand image'}</span>
+								</button>
+								{isPreviewExpanded && (
+									<button
+										type='button'
+										className='context-feed-preview-close'
+										onClick={(event) => {
+											event.preventDefault();
+											event.stopPropagation();
+											setIsPreviewExpanded(false);
+										}}>
+										Close image
+									</button>
+								)}
+							</>
+						:	<div className='context-feed-preview-media'>
+								{previewMedia.type === 'video' ?
+									<video
+										controls
+										playsInline
+										muted
+										preload='metadata'
+										src={previewMediaUrl}
+										aria-label={previewImage.alt || item.title || 'Embedded video'}
+									/>
+								:	<iframe
+										loading='lazy'
+										title={previewImage.alt || item.title || 'Embedded video'}
+										src={previewMediaUrl}
+										sandbox='allow-scripts allow-same-origin allow-popups allow-forms'
+									/>
+								}
+							</div>
+						}
 					</div>
 				)}
 				{displaySummaryText && (

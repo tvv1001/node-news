@@ -629,9 +629,9 @@ export default function PipelinePage() {
 						{refreshing ? 'Refreshing...' : 'Refresh Catalog Now'}
 					</button>
 					<a
-						href='/rss-portal'
+						href='/sse-dashboard'
 						className='btn btn-secondary'>
-						View Portal
+						View SSE Dashboard
 					</a>
 				</div>
 			</header>

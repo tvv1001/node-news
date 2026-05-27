@@ -38,7 +38,7 @@ The current dashboard is a compact three-column layout:
 
 ### Management Portal
 
-The **RSS Builder Management Portal** (`/rss-portal`) provides a detailed view of the context feed service:
+The **SSE Dashboard** (`/sse-dashboard`) provides a detailed view of the context feed service:
 
 - **Status**: Live monitor state, last update times, and errors.
 - **Configuration**: Internal refresh intervals, match limits, and active search engines.

@@ -98,3 +98,7 @@ When changing crawler or aggregation logic, prefer running the search engine, do
 - `server/data/search-runs/` - persisted crawl/status artifacts useful when debugging search-job behavior
 
 If you need to make a change and this file gives a path, trust that path first before doing broad repo-wide searches.
+
+### SSE stream & live-lane docs
+
+If you are changing live feed behavior or lane logic, review `docs/technical/SSE-and-lanes.md` for the SSE contract, lane limits, and where the client merges snapshots. The `ContextFeedColumn` and `server/routes/context.js` files are the canonical code references for lane sizing and SSE behavior.
