@@ -6,7 +6,6 @@ import { searchRouter, startBackgroundCrawlService } from './routes/search.js';
 import { texasRouter } from './routes/texas.js';
 import { oscnRouter } from './routes/oscn.js';
 import { rssRouter } from './routes/rss.js';
-import { xRouter } from './routes/x.js';
 import { contextRouter } from './routes/context.js';
 import { startContextFeedMonitor } from './services/context/contextFeedService.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
@@ -52,7 +51,7 @@ app.use('/api/search', searchRouter);
 app.use('/api/texas', texasRouter);
 app.use('/api/oscn', oscnRouter);
 app.use('/api/rss', rssRouter);
-app.use('/api/x', xRouter);
+// X/Twitter scraper routes removed per user request (references to x.com/twitter disabled)
 app.use('/api/context', contextRouter);
 
 // Health check

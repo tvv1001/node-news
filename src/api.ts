@@ -99,8 +99,20 @@ export async function fetchContextMonitor({ refresh = false } = {}) {
 	if (refresh) {
 		url.searchParams.set('refresh', '1');
 	}
-	const res = await fetch(url as any, { cache: 'no-store' });
-	return handleResponse(res);
+	try {
+		const res = await fetch(url as any, { cache: 'no-store' });
+		return await handleResponse(res);
+	} catch (err) {
+		// Return a safe default so callers don't crash when the backend is unavailable.
+		return {
+			status: { started: false },
+			config: {},
+			tags: [],
+			sources: { builtin: [], generalNewsCatalog: [] },
+			catalog: [],
+			output: { matches: [], generalNews: [] },
+		};
+	}
 }
 
 export async function fetchContextPortal() {

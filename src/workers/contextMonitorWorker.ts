@@ -81,6 +81,20 @@ function connectStream() {
 		}
 	});
 
+	// Support diff events
+	stream.addEventListener('diff', (event: any) => {
+		try {
+			const payload = JSON.parse(event.data);
+			const diff = payload?.diff || {};
+			// apply diffs to latestSnapshot
+			latestSnapshot = applyDiffToSnapshot(latestSnapshot, diff);
+			postWorkerMessage('status', { status: 'connected' });
+			postWorkerMessage('snapshot', { reason: payload?.reason || 'diff', snapshot: latestSnapshot });
+		} catch (error: any) {
+			postWorkerMessage('worker-error', { error: error?.message || 'Invalid diff payload.' });
+		}
+	});
+
 	// RSS-focused low-latency stream
 	rssStream = new EventSource(buildContextUrl('/api/context/rss-stream'));
 	rssStream.addEventListener('snapshot', (event: any) => {
@@ -91,6 +105,17 @@ function connectStream() {
 			postWorkerMessage('snapshot', { reason: `rss:${payload?.reason || 'snapshot'}`, snapshot: payload?.snapshot || payload });
 		} catch (error: any) {
 			postWorkerMessage('worker-error', { error: error?.message || 'Invalid rss stream payload.' });
+		}
+	});
+
+	rssStream.addEventListener('diff', (event: any) => {
+		try {
+			const payload = JSON.parse(event.data);
+			const diff = payload?.diff || {};
+			latestSnapshot = applyDiffToSnapshot(latestSnapshot, diff);
+			postWorkerMessage('snapshot', { reason: `rss:${payload?.reason || 'diff'}`, snapshot: latestSnapshot });
+		} catch (error: any) {
+			postWorkerMessage('worker-error', { error: error?.message || 'Invalid rss diff payload.' });
 		}
 	});
 
@@ -105,6 +130,38 @@ function connectStream() {
 			postWorkerMessage('worker-error', { error: error?.message || 'Invalid crawl stream payload.' });
 		}
 	});
+
+	crawlStream.addEventListener('diff', (event: any) => {
+		try {
+			const payload = JSON.parse(event.data);
+			const diff = payload?.diff || {};
+			latestSnapshot = applyDiffToSnapshot(latestSnapshot, diff);
+			postWorkerMessage('snapshot', { reason: `crawl:${payload?.reason || 'diff'}`, snapshot: latestSnapshot });
+		} catch (error: any) {
+			postWorkerMessage('worker-error', { error: error?.message || 'Invalid crawl diff payload.' });
+		}
+	});
+
+	function applyDiffToSnapshot(base = null, diff = { added: [], updated: [], removed: [] }) {
+		if (!base) base = { output: { matches: [] } };
+		const matches = Array.isArray(base.output?.matches) ? [...base.output.matches] : [];
+		const map = new Map();
+		for (const m of matches) if (m && m.id) map.set(String(m.id), m);
+		for (const u of diff.updated || []) {
+			if (u && u.id) map.set(String(u.id), u);
+		}
+		for (const a of diff.added || []) {
+			if (a && a.id) map.set(String(a.id), a);
+		}
+		for (const r of diff.removed || []) {
+			map.delete(String(r));
+		}
+		const merged = Array.from(map.values());
+		const out = JSON.parse(JSON.stringify(base));
+		out.output = out.output || {};
+		out.output.matches = merged;
+		return out;
+	}
 
 	stream.onopen = () => {
 		hasConnectedToStream = true;

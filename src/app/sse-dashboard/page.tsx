@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import {
-	fetchContextPortal,
-	fetchContextMonitor,
 	addContextSource,
-	updateContextSource,
+	fetchContextMonitor,
+	fetchContextPortal,
 	removeContextSource,
+	updateContextSource,
 	testContextSource,
 	blockContextSource,
 	unblockContextSource,
-	addContextTags,
-	removeContextTags,
 } from '../../api';
 import FeedCard from '../../components/FeedCard';
 import '../../style.css';
@@ -19,6 +17,8 @@ import '../../style.css';
 export default function SSEDashboardPage() {
 	const [portal, setPortal] = useState<any>(null);
 	const [monitor, setMonitor] = useState<any>({});
+	const [rssSnapshot, setRssSnapshot] = useState<any>(null);
+	const [crawlSnapshot, setCrawlSnapshot] = useState<any>(null);
 	const [loading, setLoading] = useState(true);
 	const [refreshing, setRefreshing] = useState(false);
 	const [editingSource, setEditingSource] = useState<any>(null);
@@ -30,8 +30,8 @@ export default function SSEDashboardPage() {
 		try {
 			if (force) await fetchContextMonitor({ refresh: true });
 			const [p, m] = await Promise.all([fetchContextPortal(), fetchContextMonitor()]);
-			setPortal(p);
-			setMonitor(m);
+			setPortal(p || {});
+			setMonitor(m || {});
 		} catch (err) {
 			console.error(err);
 		} finally {
@@ -50,8 +50,111 @@ export default function SSEDashboardPage() {
 				.then((p) => setPortal(p))
 				.catch(console.error);
 		}, 60000);
-		return () => clearInterval(id);
+
+		// Open family-specific SSE streams for live side-by-side compare
+		const CONTEXT_BASE = (process.env.NEXT_PUBLIC_CONTEXT_API_URL as string) || 'http://localhost:3001';
+		let rssStream: EventSource | null = null;
+		let crawlStream: EventSource | null = null;
+
+		function applyDiffToSnapshot(snapshot: any, diff: any) {
+			if (!snapshot) return snapshot;
+			const next = JSON.parse(JSON.stringify(snapshot));
+			const matches = Array.isArray(next.output?.matches) ? [...next.output.matches] : [];
+			const map = new Map(matches.map((m: any) => [String(m.id), m]));
+			if (diff?.removed && Array.isArray(diff.removed)) {
+				for (const id of diff.removed) map.delete(String(id));
+			}
+			if (diff?.added && Array.isArray(diff.added)) {
+				for (const item of diff.added) if (item && item.id) map.set(String(item.id), item);
+			}
+			if (diff?.updated && Array.isArray(diff.updated)) {
+				for (const item of diff.updated) if (item && item.id) map.set(String(item.id), item);
+			}
+			next.output = next.output || {};
+			next.output.matches = Array.from(map.values());
+			return next;
+		}
+
+		try {
+			rssStream = new EventSource(`${CONTEXT_BASE}/api/context/rss-stream`);
+			rssStream.addEventListener('snapshot', (e: any) => {
+				try {
+					const payload = JSON.parse(e.data);
+					setRssSnapshot(payload.snapshot || payload);
+				} catch (err) {
+					console.error('rss snapshot parse', err);
+				}
+			});
+			rssStream.addEventListener('diff', (e: any) => {
+				try {
+					const payload = JSON.parse(e.data);
+					setRssSnapshot((prev: any) => applyDiffToSnapshot(prev, payload.diff || payload.data?.diff || {}));
+				} catch (err) {
+					console.error('rss diff parse', err);
+				}
+			});
+
+			crawlStream = new EventSource(`${CONTEXT_BASE}/api/context/crawl-stream`);
+			crawlStream.addEventListener('snapshot', (e: any) => {
+				try {
+					const payload = JSON.parse(e.data);
+					setCrawlSnapshot(payload.snapshot || payload);
+				} catch (err) {
+					console.error('crawl snapshot parse', err);
+				}
+			});
+			crawlStream.addEventListener('diff', (e: any) => {
+				try {
+					const payload = JSON.parse(e.data);
+					setCrawlSnapshot((prev: any) => applyDiffToSnapshot(prev, payload.diff || payload.data?.diff || {}));
+				} catch (err) {
+					console.error('crawl diff parse', err);
+				}
+			});
+		} catch (err) {
+			console.error('Failed to open family SSE streams', err);
+		}
+
+		return () => {
+			clearInterval(id);
+			try {
+				rssStream?.close();
+			} catch (e) {}
+			try {
+				crawlStream?.close();
+			} catch (e) {}
+		};
 	}, []);
+
+	const builtin = Array.isArray(portal?.catalog) ? portal.catalog : [];
+	const userAdded = Array.isArray(portal?.sources?.userAdded) ? portal.sources.userAdded : [];
+	const blocked = Array.isArray(portal?.sources?.blocked) ? portal.sources.blocked : [];
+	// live snapshots from family SSEs (fallback to portal payload when not available)
+	const rssMatches =
+		Array.isArray(rssSnapshot?.output?.matches) ? rssSnapshot.output.matches
+		: Array.isArray(portal?.output?.generalNews) && portal.output.generalNews.length > 0 ? portal.output.generalNews
+		: Array.isArray(portal?.output?.matches) ? portal.output.matches
+		: [];
+
+	// sampleFeed removed — left column no longer shows a sample feed
+
+	const crawlMatchesAll =
+		Array.isArray(crawlSnapshot?.output?.matches) ? crawlSnapshot.output.matches
+		: Array.isArray(portal?.output?.matches) ? portal.output.matches
+		: [];
+	function isRedditItem(item: any) {
+		try {
+			const src = String(item?.source || '') + ' ' + String(item?.feedUrl || '') + ' ' + String(item?.homepage || '') + ' ' + String(item?.link || '');
+			if (/reddit\.com|\breddit\b|redd\.it/i.test(src)) return true;
+			if (Array.isArray(item?.tags) && item.tags.some((t: any) => String(t).toLowerCase().includes('reddit'))) return true;
+		} catch (e) {}
+		return false;
+	}
+
+	const crawlResearchMatches = crawlMatchesAll.filter((m: any) => String(m?.context || '').toLowerCase() === 'research' && !isRedditItem(m));
+
+	const [formRight, setFormRight] = useState({ url: '', source: '' });
+	const [editingRight, setEditingRight] = useState<any>(null);
 
 	const resetForm = () => setForm({ url: '', source: '', context: 'news', useTagTemplate: false, replaceTagValue: '', testTag: '' });
 
@@ -74,57 +177,53 @@ export default function SSEDashboardPage() {
 	};
 
 	const handleSubmit = async (e: any) => {
-		e.preventDefault();
+		e?.preventDefault();
 		try {
 			if (editingSource) {
-				await updateContextSource(editingSource.url, {
-					url: form.url,
-					source: form.source,
-					context: form.context,
-					useTagTemplate: form.useTagTemplate,
-					urlTemplate: form.useTagTemplate ? form.url : undefined,
-					replaceTagValue: form.replaceTagValue || undefined,
-					testTag: form.testTag || undefined,
-				});
-				setEditingSource(null);
+				await updateContextSource(editingSource.url || editingSource, { ...editingSource, ...form });
 			} else {
-				await addContextSource({
-					url: form.url,
-					source: form.source,
-					context: form.context,
-					useTagTemplate: form.useTagTemplate,
-					urlTemplate: form.useTagTemplate ? form.url : undefined,
-					replaceTagValue: form.replaceTagValue || undefined,
-					testTag: form.testTag || undefined,
-				});
+				await addContextSource({ ...form });
 			}
 			resetForm();
 			await load(true);
 		} catch (err: any) {
-			alert(err.message || 'Failed');
+			alert(err.message || 'Failed to save source');
 		}
 	};
 
-	const handleEdit = (src: any) => {
-		setEditingSource(src);
-		setForm({
-			url: src.urlTemplate || src.url || src.homepage || '',
-			source: src.source || '',
-			context: src.context || 'news',
-			useTagTemplate: Boolean(src.type === 'tag-template' || src.urlTemplate),
-			replaceTagValue: src.replaceTagValue || '',
-			testTag: src.sampleTag || '',
-		});
-	};
-
 	const handleRemove = async (url: string, isCustom = false) => {
-		if (!confirm('Remove this source?')) return;
 		try {
 			if (isCustom) await removeContextSource(url);
 			else await blockContextSource(url);
 			await load(true);
 		} catch (err: any) {
-			alert(err.message || 'Failed');
+			alert(err.message || 'Failed to remove');
+		}
+	};
+
+	const handleEdit = (s: any) => {
+		setEditingSource(s);
+		setForm({ url: s.url || '', source: s.source || '', context: s.context || 'news', useTagTemplate: !!s.urlTemplate, replaceTagValue: s.replaceTagValue || '', testTag: '' });
+	};
+
+	const handleEditRight = (s: any) => {
+		setEditingRight(s);
+		setFormRight({ url: s.url || '', source: s.source || '' });
+	};
+
+	const handleSubmitRight = async (e: any) => {
+		e?.preventDefault();
+		try {
+			if (editingRight) {
+				await updateContextSource(editingRight.url || editingRight, { ...editingRight, ...formRight });
+			} else {
+				await addContextSource({ ...formRight, context: 'crawl' });
+			}
+			setFormRight({ url: '', source: '' });
+			setEditingRight(null);
+			await load(true);
+		} catch (err: any) {
+			alert(err.message || 'Failed to save source');
 		}
 	};
 
@@ -133,61 +232,41 @@ export default function SSEDashboardPage() {
 			await unblockContextSource(url);
 			await load(true);
 		} catch (err: any) {
-			alert(err.message || 'Failed');
+			alert(err.message || 'Failed to unblock');
 		}
 	};
 
-	const handleAddTag = async (tag: string) => {
-		if (!tag) return;
-		try {
-			await addContextTags([tag]);
-			await load(true);
-		} catch (err: any) {
-			alert(err.message || 'Failed');
-		}
-	};
-
-	const handleRemoveTag = async (tag: string) => {
-		try {
-			await removeContextTags([tag]);
-			await load(true);
-		} catch (err: any) {
-			alert(err.message || 'Failed');
-		}
-	};
-
-	if (loading || !portal) return <div className='portal-loading'>Loading SSE Dashboard...</div>;
-
-	const userAdded = Array.isArray(portal.sources.userAdded) ? portal.sources.userAdded : [];
-	const blocked = Array.isArray(portal.sources.blocked) ? portal.sources.blocked : [];
-	const builtin = Array.isArray(portal.sources.builtin) ? portal.sources.builtin : [];
+	if (loading) return <div className='portal-loading'>Loading SSE Dashboard...</div>;
 
 	return (
-		<div className='portal-shell'>
-			<header className='portal-header'>
-				<h1>SSE Dashboard</h1>
-				<div style={{ display: 'flex', gap: 8 }}>
-					<button
-						className='btn btn-primary'
-						onClick={() => load(true)}
-						disabled={refreshing}>
-						{refreshing ? 'Refreshing...' : 'Refresh'}
-					</button>
-				</div>
-			</header>
-
-			<div className='portal-grid'>
-				<div className='portal-column'>
+		<div className='dark-route-shell portal-dark-shell'>
+			<div
+				className='portal-two-column'
+				style={{ display: 'flex', gap: 16 }}>
+				<div
+					className='portal-column'
+					style={{ flex: 1 }}>
 					<section className='panel portal-card'>
-						<h3>Status & Config</h3>
-						<div>Started: {portal.status.started ? 'yes' : 'no'}</div>
-						<div>Stream version: {portal.status.streamVersion}</div>
-						<div>Feeds: {portal.status.feedCount}</div>
-						<pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(portal.config, null, 2)}</pre>
+						<h3>Status & Config (Fast RSS)</h3>
+						<div>Started: {portal?.status?.started ? 'yes' : 'no'}</div>
+						<div>Stream version: {portal?.status?.streamVersion}</div>
+						<div>Feeds: {portal?.status?.feedCount}</div>
+						<div>
+							RSS items:{' '}
+							{Array.isArray(portal?.output?.matches) ?
+								portal.output.matches.filter((item: any) => {
+									const src = String(item.discoverySource || item.source || item.feedUrl || '').toLowerCase();
+									if (String(item.discoverySource || '').toLowerCase() === 'rss') return true;
+									if (/\b(rss|feed|google news|wired|investing|news)\b/.test(src)) return true;
+									if (String(item.parentUrl || item.link || '').match(/(\.rss$|\/feed(?:$|\/)|\.xml$)/i)) return true;
+									return false;
+								}).length
+							:	0}
+						</div>
 					</section>
 
 					<section className='panel portal-card'>
-						<h3>Add / Edit Source</h3>
+						<h3>Add / Edit RSS Source</h3>
 						<form
 							onSubmit={handleSubmit}
 							className='form-grid'>
@@ -207,43 +286,6 @@ export default function SSEDashboardPage() {
 									onChange={(e) => setForm((s) => ({ ...s, source: e.target.value }))}
 								/>
 							</div>
-							<div className='form-field'>
-								<label>Context</label>
-								<select
-									value={form.context}
-									onChange={(e) => setForm((s) => ({ ...s, context: e.target.value }))}>
-									<option value='news'>news</option>
-									<option value='research'>research</option>
-								</select>
-							</div>
-							<div className='form-field full-width'>
-								<label>
-									<input
-										type='checkbox'
-										checked={form.useTagTemplate}
-										onChange={(e) => setForm((s) => ({ ...s, useTagTemplate: e.target.checked }))}
-									/>{' '}
-									Use as tag template
-								</label>
-							</div>
-							{form.useTagTemplate && (
-								<div className='form-field full-width'>
-									<label>Replace tag value</label>
-									<input
-										value={form.replaceTagValue}
-										onChange={(e) => setForm((s) => ({ ...s, replaceTagValue: e.target.value }))}
-									/>
-								</div>
-							)}
-							{form.useTagTemplate && (
-								<div className='form-field full-width'>
-									<label>Test tag</label>
-									<input
-										value={form.testTag}
-										onChange={(e) => setForm((s) => ({ ...s, testTag: e.target.value }))}
-									/>
-								</div>
-							)}
 							<div className='form-actions'>
 								<button
 									className='btn btn-secondary'
@@ -270,63 +312,9 @@ export default function SSEDashboardPage() {
 							</div>
 						)}
 					</section>
-				</div>
-
-				<div className='portal-column'>
-					<section className='panel portal-card portal-sources'>
-						<h3>User Sources</h3>
-						<div className='portal-list'>
-							{userAdded.map((s: any) => (
-								<div
-									key={s.url}
-									className='portal-list-item'>
-									<div className='portal-item-main'>
-										<div className='portal-item-title'>{s.source}</div>
-										<div className='portal-item-url'>{s.url}</div>
-									</div>
-									<div className='portal-item-actions'>
-										<button
-											className='btn btn-secondary'
-											onClick={() => handleEdit(s)}>
-											Edit
-										</button>
-										<button
-											className='btn btn-remove'
-											onClick={() => handleRemove(s.url, true)}>
-											Remove
-										</button>
-									</div>
-								</div>
-							))}
-						</div>
-					</section>
 
 					<section className='panel portal-card portal-sources'>
-						<h3>Blocked Sources</h3>
-						<div className='portal-list'>
-							{blocked.map((u: string) => (
-								<div
-									key={u}
-									className='portal-list-item'>
-									<div className='portal-item-main'>
-										<div className='portal-item-url'>{u}</div>
-									</div>
-									<div className='portal-item-actions'>
-										<button
-											className='btn btn-secondary'
-											onClick={() => handleUnblock(u)}>
-											Unblock
-										</button>
-									</div>
-								</div>
-							))}
-						</div>
-					</section>
-				</div>
-
-				<div className='portal-column'>
-					<section className='panel portal-card portal-sources'>
-						<h3>Builtin Catalog (sample)</h3>
+						<h3>Builtin Catalog (RSS samples)</h3>
 						<div className='portal-list'>
 							{builtin.slice(0, 20).map((f: any, i: number) => (
 								<div
@@ -348,12 +336,152 @@ export default function SSEDashboardPage() {
 						</div>
 					</section>
 
+					{/* Sample feed removed */}
+
+					{/* Moved from Pipeline: Catalog & Feeds (bottom-left) */}
 					<section className='panel portal-card'>
-						<h3>Live matches (sample)</h3>
+						<h3>Catalog (moved from Pipeline)</h3>
+						{(() => {
+							const portalUserAdded = Array.isArray(portal?.sources?.userAdded) ? portal.sources.userAdded : [];
+							const templateBaseUrls = portalUserAdded.filter((f: any) => f.type === 'tag-template');
+							const tagDrivenFeeds = Array.isArray(portal?.catalog) ? portal.catalog.filter((feed: any) => String(feed?.urlTemplate || feed?.parentUrl || '').trim()) : [];
+							const standardCatalogFeeds = Array.isArray(portal?.catalog) ? portal.catalog.filter((feed: any) => !String(feed?.urlTemplate || feed?.parentUrl || '').trim()) : [];
+							return (
+								<div>
+									{templateBaseUrls.length > 0 && (
+										<div className='portal-list portal-list-large'>
+											{templateBaseUrls.map((feed: any, index: number) => (
+												<div
+													key={`template-moved-${index}`}
+													className='portal-list-item'>
+													<div className='portal-item-main'>
+														<div className='portal-item-url'>{`Base URL: ${feed.url}`}</div>
+													</div>
+													<div className='portal-item-actions'>
+														<button
+															className='btn btn-secondary'
+															onClick={() => handleEdit(feed)}>
+															Edit
+														</button>
+														<button
+															className='btn btn-remove'
+															onClick={() => handleRemove(feed.url, true)}>
+															Remove
+														</button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+
+									{tagDrivenFeeds.length > 0 && (
+										<div className='portal-list portal-list-large'>
+											{tagDrivenFeeds.map((feed: any, index: number) => (
+												<div
+													key={`tag-driven-moved-${index}`}
+													className='portal-list-item'>
+													<div className='portal-item-main'>
+														<div className='portal-item-title'>{feed.source}</div>
+														<div className='portal-item-url'>{feed.url || feed.parentUrl}</div>
+													</div>
+													<div className='portal-item-actions'>
+														<button
+															className='btn btn-secondary'
+															onClick={() => handleEdit(feed)}>
+															Edit
+														</button>
+														<button
+															className='btn btn-remove'
+															onClick={() => handleRemove(feed.url, false)}>
+															Remove
+														</button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+
+									{standardCatalogFeeds.length > 0 && (
+										<div className='portal-list portal-list-large'>
+											{standardCatalogFeeds.map((feed: any, index: number) => (
+												<div
+													key={`standard-catalog-moved-${index}`}
+													className='portal-list-item'>
+													<div className='portal-item-main'>
+														<div className='portal-item-title'>{feed.source}</div>
+														<div className='portal-item-url'>{feed.url}</div>
+													</div>
+													<div className='portal-item-actions'>
+														<button
+															className='btn btn-secondary'
+															onClick={() => handleEdit(feed)}>
+															Edit
+														</button>
+														<button
+															className='btn btn-remove'
+															onClick={() => handleRemove(feed.url, false)}>
+															Remove
+														</button>
+													</div>
+												</div>
+											))}
+										</div>
+									)}
+
+									{Array.isArray(portal?.sources?.blocked) && portal.sources.blocked.length > 0 && (
+										<div>
+											<h4>Blocked Sources</h4>
+											<div className='portal-list'>
+												{portal.sources.blocked.map((u: string, i: number) => (
+													<div
+														key={`blocked-moved-${i}`}
+														className='portal-list-item'>
+														<div className='portal-item-main'>
+															<div className='portal-item-url'>{u}</div>
+														</div>
+														<div className='portal-item-actions'>
+															<button
+																className='btn btn-secondary'
+																onClick={() => handleUnblock(u)}>
+																Unblock
+															</button>
+														</div>
+													</div>
+												))}
+											</div>
+										</div>
+									)}
+
+									<div style={{ marginTop: 12 }}>
+										<strong>Master RSS Output</strong>
+										<div>
+											<code className='portal-url-code'>http://localhost:3001/api/context/rss</code>
+										</div>
+									</div>
+								</div>
+							);
+						})()}
+					</section>
+
+					{/* Live Feed removed per request */}
+				</div>
+
+				<div
+					className='portal-column'
+					style={{ flex: 1 }}>
+					<section className='panel portal-card'>
+						<h3>Status & Config (Crawl)</h3>
+						<div>Started: {portal?.status?.started ? 'yes' : 'no'}</div>
+						<div>Stream version: {portal?.status?.streamVersion}</div>
+						<div>Feeds: {portal?.status?.feedCount}</div>
+					</section>
+					{/* Research lane: slower crawl/research matches */}
+					<section className='panel portal-card'>
+						<h3>Research (slow crawl)</h3>
 						<div className='portal-live-feed-list'>
-							{(Array.isArray(portal.output?.matches) ? portal.output.matches : []).slice(0, 30).map((item: any, i: number) => (
+							{(Array.isArray(crawlResearchMatches) ? crawlResearchMatches : []).slice(0, 50).map((item: any, i: number) => (
 								<FeedCard
-									key={`${item.id || item.link || item.title || ''}-${i}`}
+									key={`research-${i}-${String(item.id || item.link || item.title || '')}`}
 									item={item}
 									className='context-feed-stream-item'
 									timestamp={item.publishedAt || item.discoveredAt}
@@ -361,6 +489,147 @@ export default function SSEDashboardPage() {
 									timestampClassName='context-notification-item-meta'
 								/>
 							))}
+						</div>
+					</section>
+					<section className='panel portal-card portal-sources'>
+						<h3>User Sources (Crawl)</h3>
+						<form
+							onSubmit={handleSubmitRight}
+							className='form-grid'>
+							<div className='form-field full-width'>
+								<label>URL</label>
+								<input
+									type='url'
+									value={formRight.url}
+									onChange={(e) => setFormRight((s) => ({ ...s, url: e.target.value }))}
+									required
+								/>
+							</div>
+							<div className='form-field'>
+								<label>Source name</label>
+								<input
+									value={formRight.source}
+									onChange={(e) => setFormRight((s) => ({ ...s, source: e.target.value }))}
+								/>
+							</div>
+							<div className='form-actions'>
+								<button
+									className='btn btn-primary'
+									type='submit'>
+									{editingRight ? 'Update' : 'Add'}
+								</button>
+								{editingRight && (
+									<button
+										type='button'
+										className='btn btn-secondary'
+										onClick={() => {
+											setEditingRight(null);
+											setFormRight({ url: '', source: '' });
+										}}>
+										Cancel
+									</button>
+								)}
+							</div>
+						</form>
+
+						<div
+							className='portal-list portal-list-large'
+							style={{ marginTop: 12 }}>
+							{/* Builtin sources */}
+							{Array.isArray(portal?.sources?.builtin) &&
+								portal.sources.builtin.map((feed: any, i: number) => (
+									<div
+										key={`builtin-${i}`}
+										className='portal-list-item'>
+										<div className='portal-item-main'>
+											<div className='portal-item-title'>{feed.source}</div>
+											<div className='portal-item-url'>{feed.url || feed.homepage || ''}</div>
+										</div>
+										<div className='portal-item-actions'>
+											<button
+												className='btn btn-remove'
+												onClick={() => handleRemove(feed.url || feed.homepage, false)}>
+												Remove
+											</button>
+										</div>
+									</div>
+								))}
+
+							{/* User-added (editable) */}
+							{Array.isArray(portal?.sources?.userAdded) &&
+								portal.sources.userAdded.map((feed: any, i: number) => (
+									<div
+										key={`user-${i}`}
+										className='portal-list-item'>
+										<div className='portal-item-main'>
+											<div className='portal-item-title'>{feed.source}</div>
+											<div className='portal-item-url'>{feed.url || feed.homepage || ''}</div>
+										</div>
+										<div className='portal-item-actions'>
+											<button
+												className='btn btn-secondary'
+												onClick={() => handleEditRight(feed)}>
+												Edit
+											</button>
+											<button
+												className='btn btn-remove'
+												onClick={() => handleRemove(feed.url, true)}>
+												Remove
+											</button>
+										</div>
+									</div>
+								))}
+
+							{/* Generated catalog entries */}
+							{Array.isArray(portal?.catalog) &&
+								portal.catalog.map((feed: any, i: number) => (
+									<div
+										key={`catalog-${i}`}
+										className='portal-list-item'>
+										<div className='portal-item-main'>
+											<div className='portal-item-title'>{feed.source}</div>
+											<div className='portal-item-url'>{feed.url || feed.parentUrl || ''}</div>
+										</div>
+										<div className='portal-item-actions'>
+											<button
+												className='btn btn-remove'
+												onClick={() => handleRemove(feed.url || feed.parentUrl, false)}>
+												Remove
+											</button>
+										</div>
+									</div>
+								))}
+						</div>
+
+						{Array.isArray(portal?.sources?.blocked) && portal.sources.blocked.length > 0 && (
+							<div style={{ marginTop: 12 }}>
+								<h4>Blocked Sources</h4>
+								<div className='portal-list'>
+									{portal.sources.blocked.map((u: string, i: number) => (
+										<div
+											key={`blocked-moved-${i}`}
+											className='portal-list-item'>
+											<div className='portal-item-main'>
+												<div className='portal-item-url'>{u}</div>
+											</div>
+											<div className='portal-item-actions'>
+												<button
+													className='btn btn-secondary'
+													onClick={() => handleUnblock(u)}>
+													Unblock
+												</button>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						)}
+
+						<div style={{ marginTop: 12 }}>
+							<strong>Master RSS Output</strong>
+							<div>
+								<code className='portal-url-code'>http://localhost:3001/api/context/rss</code>
+							</div>
 						</div>
 					</section>
 				</div>

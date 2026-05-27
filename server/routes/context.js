@@ -126,21 +126,74 @@ contextRouter.get('/stream', (req, res) => {
 	}
 
 	res.write('retry: 5000\n\n');
+	// send initial full snapshot
+	const initialSnapshot = getContextFeedSnapshot();
 	writeSseEvent(res, {
 		event: 'snapshot',
-		id: getContextFeedSnapshot().streamVersion || 0,
+		id: initialSnapshot.streamVersion || 0,
 		data: {
 			reason: 'initial',
-			snapshot: getContextFeedSnapshot(),
+			snapshot: initialSnapshot,
 		},
 	});
 
+	// Keep per-connection last snapshot so we can compute diffs
+	let lastSnapshot = initialSnapshot;
+
+	function computeDiff(oldSnap = {}, newSnap = {}) {
+		try {
+			const oldMatches = Array.isArray(oldSnap.output?.matches) ? oldSnap.output.matches : oldSnap.matches || [];
+			const newMatches = Array.isArray(newSnap.output?.matches) ? newSnap.output.matches : newSnap.matches || [];
+			const oldMap = new Map();
+			const newMap = new Map();
+
+			for (const m of oldMatches) if (m && m.id) oldMap.set(String(m.id), m);
+			for (const m of newMatches) if (m && m.id) newMap.set(String(m.id), m);
+
+			const added = [];
+			const updated = [];
+			const removed = [];
+
+			for (const [id, item] of newMap.entries()) {
+				if (!oldMap.has(id)) {
+					added.push(item);
+				} else {
+					const oldItem = oldMap.get(id);
+					if (JSON.stringify(oldItem) !== JSON.stringify(item)) updated.push(item);
+				}
+			}
+
+			for (const id of oldMap.keys()) {
+				if (!newMap.has(id)) removed.push(id);
+			}
+
+			return { added, updated, removed };
+		} catch (e) {
+			return { added: [], updated: [], removed: [] };
+		}
+	}
+
 	const unsubscribe = subscribeToContextFeedMonitor((payload) => {
-		writeSseEvent(res, {
-			event: 'snapshot',
-			id: payload.id,
-			data: payload,
-		});
+		try {
+			const newSnapshot = payload.snapshot || payload;
+			const diff = computeDiff(lastSnapshot, newSnapshot);
+			// if there are changes, emit a compact diff event; otherwise skip
+			if ((diff.added && diff.added.length) || (diff.updated && diff.updated.length) || (diff.removed && diff.removed.length)) {
+				writeSseEvent(res, {
+					event: 'diff',
+					id: payload.id,
+					data: {
+						reason: payload.reason,
+						diff,
+					},
+				});
+			}
+			lastSnapshot = newSnapshot;
+		} catch (e) {
+			// on error fall back to sending full payload
+			writeSseEvent(res, { event: 'snapshot', id: payload.id, data: payload });
+			lastSnapshot = payload.snapshot || payload;
+		}
 	});
 
 	const heartbeat = setInterval(() => {
@@ -192,24 +245,72 @@ contextRouter.get('/rss-stream', (req, res) => {
 	}
 
 	res.write('retry: 5000\n\n');
+	const initialSnapshot = filterSnapshotForFamily(getContextFeedSnapshot(), 'rss');
 	writeSseEvent(res, {
 		event: 'snapshot',
-		id: getContextFeedSnapshot().streamVersion || 0,
+		id: initialSnapshot.streamVersion || 0,
 		data: {
 			reason: 'initial',
-			snapshot: filterSnapshotForFamily(getContextFeedSnapshot(), 'rss'),
+			snapshot: initialSnapshot,
 		},
 	});
 
+	let lastSnapshot = initialSnapshot;
+
+	function computeDiffForFamily(oldSnap = {}, newSnap = {}, family = 'rss') {
+		try {
+			const oldFiltered = filterSnapshotForFamily(oldSnap, family);
+			const newFiltered = filterSnapshotForFamily(newSnap, family);
+			const oldMatches = Array.isArray(oldFiltered.output?.matches) ? oldFiltered.output.matches : oldFiltered.matches || [];
+			const newMatches = Array.isArray(newFiltered.output?.matches) ? newFiltered.output.matches : newFiltered.matches || [];
+			const oldMap = new Map();
+			const newMap = new Map();
+
+			for (const m of oldMatches) if (m && m.id) oldMap.set(String(m.id), m);
+			for (const m of newMatches) if (m && m.id) newMap.set(String(m.id), m);
+
+			const added = [];
+			const updated = [];
+			const removed = [];
+
+			for (const [id, item] of newMap.entries()) {
+				if (!oldMap.has(id)) {
+					added.push(item);
+				} else {
+					const oldItem = oldMap.get(id);
+					if (JSON.stringify(oldItem) !== JSON.stringify(item)) updated.push(item);
+				}
+			}
+
+			for (const id of oldMap.keys()) {
+				if (!newMap.has(id)) removed.push(id);
+			}
+
+			return { added, updated, removed };
+		} catch (e) {
+			return { added: [], updated: [], removed: [] };
+		}
+	}
+
 	const unsubscribe = subscribeToContextFeedMonitor((payload) => {
-		writeSseEvent(res, {
-			event: 'snapshot',
-			id: payload.id,
-			data: {
-				...payload,
-				snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'rss'),
-			},
-		});
+		try {
+			const newSnapshot = filterSnapshotForFamily(payload.snapshot || payload, 'rss');
+			const diff = computeDiffForFamily(lastSnapshot, newSnapshot, 'rss');
+			if ((diff.added && diff.added.length) || (diff.updated && diff.updated.length) || (diff.removed && diff.removed.length)) {
+				writeSseEvent(res, {
+					event: 'diff',
+					id: payload.id,
+					data: {
+						reason: payload.reason,
+						diff,
+					},
+				});
+			}
+			lastSnapshot = newSnapshot;
+		} catch (e) {
+			writeSseEvent(res, { event: 'snapshot', id: payload.id, data: { ...payload, snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'rss') } });
+			lastSnapshot = filterSnapshotForFamily(payload.snapshot || payload, 'rss');
+		}
 	});
 
 	const heartbeat = setInterval(() => {
@@ -236,24 +337,72 @@ contextRouter.get('/crawl-stream', (req, res) => {
 	}
 
 	res.write('retry: 5000\n\n');
+	const initialSnapshot = filterSnapshotForFamily(getContextFeedSnapshot(), 'crawl');
 	writeSseEvent(res, {
 		event: 'snapshot',
-		id: getContextFeedSnapshot().streamVersion || 0,
+		id: initialSnapshot.streamVersion || 0,
 		data: {
 			reason: 'initial',
-			snapshot: filterSnapshotForFamily(getContextFeedSnapshot(), 'crawl'),
+			snapshot: initialSnapshot,
 		},
 	});
 
+	let lastSnapshot = initialSnapshot;
+
+	function computeDiffForFamily(oldSnap = {}, newSnap = {}, family = 'crawl') {
+		try {
+			const oldFiltered = filterSnapshotForFamily(oldSnap, family);
+			const newFiltered = filterSnapshotForFamily(newSnap, family);
+			const oldMatches = Array.isArray(oldFiltered.output?.matches) ? oldFiltered.output.matches : oldFiltered.matches || [];
+			const newMatches = Array.isArray(newFiltered.output?.matches) ? newFiltered.output.matches : newFiltered.matches || [];
+			const oldMap = new Map();
+			const newMap = new Map();
+
+			for (const m of oldMatches) if (m && m.id) oldMap.set(String(m.id), m);
+			for (const m of newMatches) if (m && m.id) newMap.set(String(m.id), m);
+
+			const added = [];
+			const updated = [];
+			const removed = [];
+
+			for (const [id, item] of newMap.entries()) {
+				if (!oldMap.has(id)) {
+					added.push(item);
+				} else {
+					const oldItem = oldMap.get(id);
+					if (JSON.stringify(oldItem) !== JSON.stringify(item)) updated.push(item);
+				}
+			}
+
+			for (const id of oldMap.keys()) {
+				if (!newMap.has(id)) removed.push(id);
+			}
+
+			return { added, updated, removed };
+		} catch (e) {
+			return { added: [], updated: [], removed: [] };
+		}
+	}
+
 	const unsubscribe = subscribeToContextFeedMonitor((payload) => {
-		writeSseEvent(res, {
-			event: 'snapshot',
-			id: payload.id,
-			data: {
-				...payload,
-				snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'crawl'),
-			},
-		});
+		try {
+			const newSnapshot = filterSnapshotForFamily(payload.snapshot || payload, 'crawl');
+			const diff = computeDiffForFamily(lastSnapshot, newSnapshot, 'crawl');
+			if ((diff.added && diff.added.length) || (diff.updated && diff.updated.length) || (diff.removed && diff.removed.length)) {
+				writeSseEvent(res, {
+					event: 'diff',
+					id: payload.id,
+					data: {
+						reason: payload.reason,
+						diff,
+					},
+				});
+			}
+			lastSnapshot = newSnapshot;
+		} catch (e) {
+			writeSseEvent(res, { event: 'snapshot', id: payload.id, data: { ...payload, snapshot: filterSnapshotForFamily(payload.snapshot || {}, 'crawl') } });
+			lastSnapshot = filterSnapshotForFamily(payload.snapshot || payload, 'crawl');
+		}
 	});
 
 	const heartbeat = setInterval(() => {

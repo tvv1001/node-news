@@ -6,7 +6,6 @@ import * as cheerio from 'cheerio';
 import Parser from 'rss-parser';
 import { parseDocument } from '../crawler/documentParser.js';
 import { bingSearch, googleSearch, yahooSearch } from '../crawler/searchEngines.js';
-import { hasXCredentials } from '../crawler/xSearchScraper.js';
 import { ensureStockSymbolCatalog, isKnownUsStockSymbol, isStockSymbolCatalogReady, resetStockSymbolCatalogForTests } from './stockSymbolRegistry.js';
 import { logger } from '../../utils/logger.js';
 
@@ -1519,35 +1518,11 @@ function transformPlatformUrlToFeedUrl(inputUrl = '') {
 		const pathname = url.pathname.replace(/\/+$/, '');
 		const searchParams = url.searchParams;
 
-		// X / Twitter
+		// X / Twitter — removed support
 		if (isXHostname(hostname)) {
-			const port = process.env.PORT || '3001';
-			const nitterFallback = 'https://nitter.poast.org'; // Reliable 2026 fallback
-
-			// Search: x.com/search?q=query
-			if (pathname === '/search' && searchParams.has('q')) {
-				const query = searchParams.get('q');
-				// Try local proxy first, but if it's been failing or we want a more robust URL,
-				// we'll rely on the parser to handle the fallback if the proxy returns 502.
-				// For now, let's keep the local proxy as the "intended" path but add the nitter fallback
-				// logic directly into the fetcher if needed.
-				// Actually, a better approach for the USER is to return a URL that can be tested.
-				return `http://localhost:${port}/api/x/twitter/keyword/${encodeURIComponent(query)}`;
-			}
-
-			// Profile: x.com/username
-			const profileMatch = pathname.match(/^\/([^/]+)$/);
-			if (profileMatch && !['home', 'explore', 'notifications', 'messages', 'search', 'settings', 'i'].includes(profileMatch[1].toLowerCase())) {
-				const username = profileMatch[1];
-				return `http://localhost:${port}/api/x/twitter/user/${username}`;
-			}
-
-			// Root or other X URL
-			if (pathname === '' || pathname === '/') {
-				const error = new Error('Please provide a full X profile URL (e.g., https://x.com/username) or a search URL.');
-				error.status = 400;
-				throw error;
-			}
+			const error = new Error('X/Twitter sources are no longer supported in this deployment. Remove any x.com or twitter.com URLs and try again.');
+			error.status = 410; // Gone
+			throw error;
 		}
 
 		// Reddit
@@ -3358,7 +3333,7 @@ function buildContextFeedCatalog(feeds = [], keywords = []) {
 	// Those feeds are inherently stale (Google/Yahoo indexing delay of hours–days) and
 	// are redundant when xSearchFeeds already provides live data from the X GraphQL API.
 	const googleXStockSearchFeeds =
-		hasXCredentials() ?
+		false ?
 			[]
 		:	keywordMatchers
 				.slice(0, CONTEXT_SEARCH_ENGINE_KEYWORD_LIMIT)
@@ -4696,7 +4671,7 @@ export function startContextFeedMonitor() {
 	syncContextFeedMonitorXSchedule();
 	logger.info('Context feed monitor started', {
 		refreshMs: CONTEXT_FEED_REFRESH_MS,
-		xRefreshMs: hasXCredentials() ? X_FEED_REFRESH_MS : 0,
+		xRefreshMs: 0,
 	});
 }
 
@@ -4706,7 +4681,7 @@ export function syncContextFeedMonitorXSchedule() {
 		state.xTimer = null;
 	}
 
-	if (!state.started || !hasXCredentials()) {
+	if (!state.started || !false) {
 		return;
 	}
 
