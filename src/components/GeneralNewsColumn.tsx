@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import FeedCard from './FeedCard';
+import getTopNews from '../services/getTopNews';
+import { expandUrlTemplate } from '../utils/urlTemplate';
 
 function formatMonitorTimestamp(value = '') {
 	if (!value) return 'Refreshing';
@@ -26,6 +28,34 @@ function GeneralNewsColumn({ monitor = {} as any }: any) {
 	const [isPaused, setIsPaused] = useState(false);
 	const scrollRef = useRef(null);
 	const items = useMemo(() => (Array.isArray(monitor.generalNews) ? monitor.generalNews : []), [monitor.generalNews]);
+	const [externalItems, setExternalItems] = useState<any[]>([]);
+
+	// Fetch Hacker News top stories and merge into the All News column.
+	useEffect(() => {
+		let mounted = true;
+		(async () => {
+			try {
+				const hn = new getTopNews();
+				const stories = await hn.getStories(20);
+				if (!mounted) return;
+				const mapped = (stories || []).map((s: any) => ({
+					id: s && s.id ? `hn_${s.id}` : undefined,
+					title: s?.title || 'Hacker News',
+					link: s?.url || `https://news.ycombinator.com/item?id=${s?.id}`,
+					source: 'Hacker News',
+					publishedAt: s?.time ? new Date(s.time * 1000).toISOString() : undefined,
+					summary: s?.text || undefined,
+				}));
+				setExternalItems(mapped);
+			} catch (err) {
+				// swallow — external feed optional
+				// console.error('HN fetch failed', err);
+			}
+		})();
+		return () => {
+			mounted = false;
+		};
+	}, []);
 	const progressiveFeedState = monitor.progressiveFeedState || {};
 	const isLoadingMore = Boolean(progressiveFeedState.active) && (progressiveFeedState.generalNewsLoadedCount || 0) < (progressiveFeedState.generalNewsTotal || 0);
 
@@ -72,7 +102,7 @@ function GeneralNewsColumn({ monitor = {} as any }: any) {
 					onMouseEnter={() => setIsPaused(true)}
 					onMouseLeave={() => setIsPaused(false)}>
 					<div className='context-ticker-track'>
-						{items.map((item, index) => (
+						{externalItems.concat(items).map((item, index) => (
 							<FeedCard
 								key={`${item.id || item.link || item.title || 'general-news-item'}:${index}`}
 								item={item}

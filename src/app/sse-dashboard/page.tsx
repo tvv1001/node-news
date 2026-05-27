@@ -177,221 +177,193 @@ export default function SSEDashboardPage() {
 			</header>
 
 			<div className='portal-grid'>
-				<section className='panel portal-card'>
-					<h3>Status & Config</h3>
-					<div>Started: {portal.status.started ? 'yes' : 'no'}</div>
-					<div>Stream version: {portal.status.streamVersion}</div>
-					<div>Feeds: {portal.status.feedCount}</div>
-					<pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(portal.config, null, 2)}</pre>
-				</section>
+				<div className='portal-column'>
+					<section className='panel portal-card'>
+						<h3>Status & Config</h3>
+						<div>Started: {portal.status.started ? 'yes' : 'no'}</div>
+						<div>Stream version: {portal.status.streamVersion}</div>
+						<div>Feeds: {portal.status.feedCount}</div>
+						<pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(portal.config, null, 2)}</pre>
+					</section>
 
-				<section className='panel portal-card'>
-					<h3>Tags</h3>
-					<div style={{ marginBottom: 8 }}>
-						<input
-							placeholder='new tag'
-							id='new-tag-input'
-						/>
-						<button
-							className='btn btn-primary'
-							onClick={() => {
-								const v = (document.getElementById('new-tag-input') as HTMLInputElement).value;
-								handleAddTag(v);
-								(document.getElementById('new-tag-input') as HTMLInputElement).value = '';
-							}}>
-							Add
-						</button>
-					</div>
-					<div className='portal-tags-list'>
-						{Array.isArray(portal.tags) &&
-							portal.tags.map((t: string) => (
-								<span
-									key={t}
-									className='portal-tag-pill is-active'>
-									{t}{' '}
-									<button
-										className='portal-tag-remove'
-										onClick={() => handleRemoveTag(t)}>
-										×
-									</button>
-								</span>
+					<section className='panel portal-card'>
+						<h3>Add / Edit Source</h3>
+						<form
+							onSubmit={handleSubmit}
+							className='form-grid'>
+							<div className='form-field full-width'>
+								<label>URL or Template</label>
+								<input
+									type='url'
+									value={form.url}
+									onChange={(e) => setForm((s) => ({ ...s, url: e.target.value }))}
+									required
+								/>
+							</div>
+							<div className='form-field'>
+								<label>Source name</label>
+								<input
+									value={form.source}
+									onChange={(e) => setForm((s) => ({ ...s, source: e.target.value }))}
+								/>
+							</div>
+							<div className='form-field'>
+								<label>Context</label>
+								<select
+									value={form.context}
+									onChange={(e) => setForm((s) => ({ ...s, context: e.target.value }))}>
+									<option value='news'>news</option>
+									<option value='research'>research</option>
+								</select>
+							</div>
+							<div className='form-field full-width'>
+								<label>
+									<input
+										type='checkbox'
+										checked={form.useTagTemplate}
+										onChange={(e) => setForm((s) => ({ ...s, useTagTemplate: e.target.checked }))}
+									/>{' '}
+									Use as tag template
+								</label>
+							</div>
+							{form.useTagTemplate && (
+								<div className='form-field full-width'>
+									<label>Replace tag value</label>
+									<input
+										value={form.replaceTagValue}
+										onChange={(e) => setForm((s) => ({ ...s, replaceTagValue: e.target.value }))}
+									/>
+								</div>
+							)}
+							{form.useTagTemplate && (
+								<div className='form-field full-width'>
+									<label>Test tag</label>
+									<input
+										value={form.testTag}
+										onChange={(e) => setForm((s) => ({ ...s, testTag: e.target.value }))}
+									/>
+								</div>
+							)}
+							<div className='form-actions'>
+								<button
+									className='btn btn-secondary'
+									type='button'
+									onClick={handleTest}>
+									Test
+								</button>
+								<button
+									className='btn btn-primary'
+									type='submit'>
+									{editingSource ? 'Update' : 'Add'}
+								</button>
+							</div>
+						</form>
+						{testingPreview && (
+							<div className='portal-test-preview'>
+								{testingPreview.error ?
+									<div className='portal-test-error'>{testingPreview.error}</div>
+								:	<div>
+										<strong>{testingPreview.title}</strong>
+										<div>{testingPreview.itemCount} items</div>
+									</div>
+								}
+							</div>
+						)}
+					</section>
+				</div>
+
+				<div className='portal-column'>
+					<section className='panel portal-card portal-sources'>
+						<h3>User Sources</h3>
+						<div className='portal-list'>
+							{userAdded.map((s: any) => (
+								<div
+									key={s.url}
+									className='portal-list-item'>
+									<div className='portal-item-main'>
+										<div className='portal-item-title'>{s.source}</div>
+										<div className='portal-item-url'>{s.url}</div>
+									</div>
+									<div className='portal-item-actions'>
+										<button
+											className='btn btn-secondary'
+											onClick={() => handleEdit(s)}>
+											Edit
+										</button>
+										<button
+											className='btn btn-remove'
+											onClick={() => handleRemove(s.url, true)}>
+											Remove
+										</button>
+									</div>
+								</div>
 							))}
-					</div>
-				</section>
-
-				<section className='panel portal-card portal-sources'>
-					<h3>User Sources</h3>
-					<div className='portal-list'>
-						{userAdded.map((s: any) => (
-							<div
-								key={s.url}
-								className='portal-list-item'>
-								<div className='portal-item-main'>
-									<div className='portal-item-title'>{s.source}</div>
-									<div className='portal-item-url'>{s.url}</div>
-								</div>
-								<div className='portal-item-actions'>
-									<button
-										className='btn btn-secondary'
-										onClick={() => handleEdit(s)}>
-										Edit
-									</button>
-									<button
-										className='btn btn-remove'
-										onClick={() => handleRemove(s.url, true)}>
-										Remove
-									</button>
-								</div>
-							</div>
-						))}
-					</div>
-				</section>
-
-				<section className='panel portal-card portal-sources'>
-					<h3>Blocked Sources</h3>
-					<div className='portal-list'>
-						{blocked.map((u: string) => (
-							<div
-								key={u}
-								className='portal-list-item'>
-								<div className='portal-item-main'>
-									<div className='portal-item-url'>{u}</div>
-								</div>
-								<div className='portal-item-actions'>
-									<button
-										className='btn btn-secondary'
-										onClick={() => handleUnblock(u)}>
-										Unblock
-									</button>
-								</div>
-							</div>
-						))}
-					</div>
-				</section>
-
-				<section className='panel portal-card portal-sources'>
-					<h3>Builtin Catalog (sample)</h3>
-					<div className='portal-list'>
-						{builtin.slice(0, 20).map((f: any, i: number) => (
-							<div
-								key={`${f.url || f.source}-${i}`}
-								className='portal-list-item'>
-								<div className='portal-item-main'>
-									<div className='portal-item-title'>{f.source}</div>
-									<div className='portal-item-url'>{f.url || f.homepage || ''}</div>
-								</div>
-								<div className='portal-item-actions'>
-									<button
-										className='btn btn-remove'
-										onClick={() => handleRemove(f.url || f.homepage, false)}>
-										Remove
-									</button>
-								</div>
-							</div>
-						))}
-					</div>
-				</section>
-
-				<section className='panel portal-card'>
-					<h3>Live matches (sample)</h3>
-					<div className='portal-live-feed-list'>
-						{(Array.isArray(portal.output?.matches) ? portal.output.matches : []).slice(0, 30).map((item: any) => (
-							<FeedCard
-								key={item.id || item.link || item.title}
-								item={item}
-								className='context-feed-stream-item'
-								timestamp={item.publishedAt || item.discoveredAt}
-								summaryClassName='context-feed-summary'
-								timestampClassName='context-notification-item-meta'
-							/>
-						))}
-					</div>
-				</section>
-
-				<section className='panel portal-card'>
-					<h3>Add / Edit Source</h3>
-					<form
-						onSubmit={handleSubmit}
-						className='form-grid'>
-						<div className='form-field full-width'>
-							<label>URL or Template</label>
-							<input
-								type='url'
-								value={form.url}
-								onChange={(e) => setForm((s) => ({ ...s, url: e.target.value }))}
-								required
-							/>
 						</div>
-						<div className='form-field'>
-							<label>Source name</label>
-							<input
-								value={form.source}
-								onChange={(e) => setForm((s) => ({ ...s, source: e.target.value }))}
-							/>
+					</section>
+
+					<section className='panel portal-card portal-sources'>
+						<h3>Blocked Sources</h3>
+						<div className='portal-list'>
+							{blocked.map((u: string) => (
+								<div
+									key={u}
+									className='portal-list-item'>
+									<div className='portal-item-main'>
+										<div className='portal-item-url'>{u}</div>
+									</div>
+									<div className='portal-item-actions'>
+										<button
+											className='btn btn-secondary'
+											onClick={() => handleUnblock(u)}>
+											Unblock
+										</button>
+									</div>
+								</div>
+							))}
 						</div>
-						<div className='form-field'>
-							<label>Context</label>
-							<select
-								value={form.context}
-								onChange={(e) => setForm((s) => ({ ...s, context: e.target.value }))}>
-								<option value='news'>news</option>
-								<option value='research'>research</option>
-							</select>
+					</section>
+				</div>
+
+				<div className='portal-column'>
+					<section className='panel portal-card portal-sources'>
+						<h3>Builtin Catalog (sample)</h3>
+						<div className='portal-list'>
+							{builtin.slice(0, 20).map((f: any, i: number) => (
+								<div
+									key={`${f.url || f.source}-${i}`}
+									className='portal-list-item'>
+									<div className='portal-item-main'>
+										<div className='portal-item-title'>{f.source}</div>
+										<div className='portal-item-url'>{f.url || f.homepage || ''}</div>
+									</div>
+									<div className='portal-item-actions'>
+										<button
+											className='btn btn-remove'
+											onClick={() => handleRemove(f.url || f.homepage, false)}>
+											Remove
+										</button>
+									</div>
+								</div>
+							))}
 						</div>
-						<div className='form-field full-width'>
-							<label>
-								<input
-									type='checkbox'
-									checked={form.useTagTemplate}
-									onChange={(e) => setForm((s) => ({ ...s, useTagTemplate: e.target.checked }))}
-								/>{' '}
-								Use as tag template
-							</label>
-						</div>
-						{form.useTagTemplate && (
-							<div className='form-field full-width'>
-								<label>Replace tag value</label>
-								<input
-									value={form.replaceTagValue}
-									onChange={(e) => setForm((s) => ({ ...s, replaceTagValue: e.target.value }))}
+					</section>
+
+					<section className='panel portal-card'>
+						<h3>Live matches (sample)</h3>
+						<div className='portal-live-feed-list'>
+							{(Array.isArray(portal.output?.matches) ? portal.output.matches : []).slice(0, 30).map((item: any, i: number) => (
+								<FeedCard
+									key={`${item.id || item.link || item.title || ''}-${i}`}
+									item={item}
+									className='context-feed-stream-item'
+									timestamp={item.publishedAt || item.discoveredAt}
+									summaryClassName='context-feed-summary'
+									timestampClassName='context-notification-item-meta'
 								/>
-							</div>
-						)}
-						{form.useTagTemplate && (
-							<div className='form-field full-width'>
-								<label>Test tag</label>
-								<input
-									value={form.testTag}
-									onChange={(e) => setForm((s) => ({ ...s, testTag: e.target.value }))}
-								/>
-							</div>
-						)}
-						<div className='form-actions'>
-							<button
-								className='btn btn-secondary'
-								type='button'
-								onClick={handleTest}>
-								Test
-							</button>
-							<button
-								className='btn btn-primary'
-								type='submit'>
-								{editingSource ? 'Update' : 'Add'}
-							</button>
+							))}
 						</div>
-					</form>
-					{testingPreview && (
-						<div className='portal-test-preview'>
-							{testingPreview.error ?
-								<div className='portal-test-error'>{testingPreview.error}</div>
-							:	<div>
-									<strong>{testingPreview.title}</strong>
-									<div>{testingPreview.itemCount} items</div>
-								</div>
-							}
-						</div>
-					)}
-				</section>
+					</section>
+				</div>
 			</div>
 		</div>
 	);
